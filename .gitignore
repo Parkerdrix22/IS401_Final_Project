@@ -1,0 +1,28 @@
+# ── Environment & Secrets ─────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Node / npm ────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# ── TypeScript build output ───────────────────────────────────────────────
+backend/dist/
+
+# ── Jest ──────────────────────────────────────────────────────────────────
+coverage/
+
+# ── macOS ─────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── Editors ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
