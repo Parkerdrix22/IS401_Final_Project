@@ -1,0 +1,11 @@
+{
+  "name": "healthy-habits",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npx serve frontend -p 8080 --no-clipboard\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
