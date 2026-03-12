@@ -4,7 +4,6 @@ import { pool } from '../db';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
-const BCRYPT_HASH_RE = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
 // NOTE: The users.passwordhash column is VARCHAR(50) in the schema.
 // bcrypt hashes are 60 characters and will be truncated, which breaks compare().
@@ -39,30 +38,21 @@ router.post('/register', async (req, res) => {
 
 // POST /auth/login
 router.post('/login', async (req, res) => {
-  const { identifier, username, email, password } = req.body;
-  const loginId = (identifier ?? username ?? email ?? '').trim();
-
-  if (!loginId || !password) {
-    res.status(400).json({ error: 'Missing username/email or password' });
+  const { username, password } = req.body;
+  if (!username || !password) {
+    res.status(400).json({ error: 'Missing username or password' });
     return;
   }
   try {
     const result = await pool.query(
-      'SELECT * FROM users WHERE username = $1 OR email = $1',
-      [loginId]
+      'SELECT * FROM users WHERE username = $1',
+      [username]
     );
     const user = result.rows[0];
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
-    // Some legacy/seeded rows may not contain a valid bcrypt hash.
-    // Treat them as invalid credentials instead of returning a 500 error.
-    if (!BCRYPT_HASH_RE.test(user.passwordhash ?? '')) {
-      res.status(401).json({ error: 'Invalid credentials' });
-      return;
-    }
-
     const match = await bcrypt.compare(password, user.passwordhash);
     if (!match) {
       res.status(401).json({ error: 'Invalid credentials' });
