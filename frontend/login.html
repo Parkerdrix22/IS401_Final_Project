@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Healthy Habits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="auth-page">
+  <main class="auth-wrapper">
+    <section class="auth-card" aria-labelledby="login-title">
+      <a href="index.html" class="auth-brand">Healthy Habits</a>
+      <h1 id="login-title">Welcome back</h1>
+      <p class="auth-subtitle">Sign in to continue tracking your family habits.</p>
+
+      <form id="login-form" class="auth-form" novalidate>
+        <label for="login-username">Username</label>
+        <input id="login-username" name="username" type="text" autocomplete="username" required>
+
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+
+        <button type="submit" class="auth-btn">Sign In</button>
+      </form>
+
+      <p id="login-message" class="auth-message" aria-live="polite"></p>
+
+      <p class="auth-switch">New here? <a href="register.html">Create an account</a></p>
+    </section>
+  </main>
+
+  <script src="assets/js/auth.js"></script>
+</body>
+</html>

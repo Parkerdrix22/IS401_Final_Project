@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | Healthy Habits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="auth-page">
+  <main class="auth-wrapper">
+    <section class="auth-card" aria-labelledby="register-title">
+      <a href="index.html" class="auth-brand">Healthy Habits</a>
+      <h1 id="register-title">Create your account</h1>
+      <p class="auth-subtitle">Set up your parent account to get started.</p>
+
+      <form id="register-form" class="auth-form" novalidate>
+        <label for="register-username">Username</label>
+        <input id="register-username" name="username" type="text" autocomplete="username" required>
+
+        <label for="register-firstname">First name</label>
+        <input id="register-firstname" name="firstname" type="text" autocomplete="given-name" required>
+
+        <label for="register-lastname">Last name</label>
+        <input id="register-lastname" name="lastname" type="text" autocomplete="family-name" required>
+
+        <label for="register-email">Email</label>
+        <input id="register-email" name="email" type="email" autocomplete="email" required>
+
+        <label for="register-password">Password</label>
+        <input id="register-password" name="password" type="password" autocomplete="new-password" required>
+
+        <button type="submit" class="auth-btn">Create Account</button>
+      </form>
+
+      <p id="register-message" class="auth-message" aria-live="polite"></p>
+
+      <p class="auth-switch">Already have an account? <a href="login.html">Sign in</a></p>
+    </section>
+  </main>
+
+  <script src="assets/js/auth.js"></script>
+</body>
+</html>
