@@ -12,14 +12,14 @@
 <body>
   <nav class="site-nav" aria-label="Primary navigation">
     <div class="container nav-content">
-      <a href="index.html" class="nav-logo">Healthy Habits</a>
+      <a href="/frontend/" class="nav-logo" aria-label="Home"></a>
       <button class="mobile-menu-toggle" aria-label="Toggle navigation menu">
         <span></span>
         <span></span>
         <span></span>
       </button>
       <ul class="nav-links">
-        <li><a href="index.html" class="nav-link active">Home</a></li>
+        <li><a href="/frontend/" class="nav-link active">Home</a></li>
         <li><a href="diet.html" class="nav-link">Diet</a></li>
         <li><a href="fitness.html" class="nav-link">Fitness</a></li>
         <li><a href="screentime.html" class="nav-link">Screen Time</a></li>
@@ -45,34 +45,42 @@
       <div class="container">
         <h2>Daily Habit Categories</h2>
         <div class="habit-grid">
-          <article class="habit-card">
-            <img class="habit-image" src="assets/images/Diet Image.png" alt="Healthy food for diet tracking">
-            <div class="habit-content">
-              <h3>Diet</h3>
-              <p>Track meals, hydration, and healthy food choices each day.</p>
-            </div>
-          </article>
-          <article class="habit-card">
-            <img class="habit-image" src="assets/images/Fitness Image.png" alt="Kids doing physical activity for fitness tracking">
-            <div class="habit-content">
-              <h3>Fitness</h3>
-              <p>Log movement goals like playtime, exercise, or sports activity.</p>
-            </div>
-          </article>
-          <article class="habit-card">
-            <img class="habit-image" src="assets/images/Screen Time Image.png" alt="Child using a device for screen time tracking">
-            <div class="habit-content">
-              <h3>Screen Time</h3>
-              <p>Set limits and monitor healthy, balanced technology use.</p>
-            </div>
-          </article>
-          <article class="habit-card">
-            <img class="habit-image" src="assets/images/Goals Image.png" alt="Goal planning and achievement tracking">
-            <div class="habit-content">
-              <h3>Goals</h3>
-              <p>Define daily wins and celebrate progress with clear routines.</p>
-            </div>
-          </article>
+          <a class="habit-card-link" href="diet.html" aria-label="Open Diet page">
+            <article class="habit-card">
+              <img class="habit-image" src="assets/images/Diet Image.png" alt="Healthy food for diet tracking">
+              <div class="habit-content">
+                <h3>Diet</h3>
+                <p>Track meals, hydration, and healthy food choices each day.</p>
+              </div>
+            </article>
+          </a>
+          <a class="habit-card-link" href="fitness.html" aria-label="Open Fitness page">
+            <article class="habit-card">
+              <img class="habit-image" src="assets/images/Fitness Image.png" alt="Kids doing physical activity for fitness tracking">
+              <div class="habit-content">
+                <h3>Fitness</h3>
+                <p>Log movement goals like playtime, exercise, or sports activity.</p>
+              </div>
+            </article>
+          </a>
+          <a class="habit-card-link" href="screentime.html" aria-label="Open Screen Time page">
+            <article class="habit-card">
+              <img class="habit-image" src="assets/images/Screen Time Image.png" alt="Child using a device for screen time tracking">
+              <div class="habit-content">
+                <h3>Screen Time</h3>
+                <p>Set limits and monitor healthy, balanced technology use.</p>
+              </div>
+            </article>
+          </a>
+          <a class="habit-card-link" href="goals.html" aria-label="Open Goals page">
+            <article class="habit-card">
+              <img class="habit-image" src="assets/images/Goals Image.png" alt="Goal planning and achievement tracking">
+              <div class="habit-content">
+                <h3>Goals</h3>
+                <p>Define daily wins and celebrate progress with clear routines.</p>
+              </div>
+            </article>
+          </a>
         </div>
       </div>
     </section>
@@ -114,7 +122,7 @@
         <h2>Contact Us</h2>
         <p>Have questions or feedback? We would love to hear from you.</p>
         <div class="contact-card">
-          <p><strong>Email:</strong> support@healthyhabits.com</p>
+          <p><strong>Email:</strong> <a href="mailto:support@healthyhabits.com">support@healthyhabits.com</a></p>
           <p><strong>Phone:</strong> (801) 555-0147</p>
           <p><strong>Hours:</strong> Monday-Friday, 9:00 AM - 5:00 PM</p>
         </div>
