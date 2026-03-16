@@ -20,6 +20,7 @@ A family health tracking web application that helps parents monitor and encourag
 - [Frontend Pages](#frontend-pages)
 - [Authentication](#authentication)
 - [Scripts](#scripts)
+- [Requirements (EARS)](#requirements-ears)
 
 ---
 
@@ -484,6 +485,45 @@ See [`schema-postgres.sql`](./schema-postgres.sql) for the full schema and [`see
 | `npm run setup` | Full DB setup: schema + seed + migrations |
 | `npm run migrate` | Run pending migrations |
 | `npm test` | Run Jest test suite |
+
+---
+
+## Requirements (EARS)
+
+Requirements written using the **Easy Approach to Requirements Syntax (EARS)**.
+
+---
+
+### Ubiquitous Requirements
+
+These requirements apply at all times, regardless of system state or user action.
+
+1. The system shall allow for CRUD functionality for Nutrition.
+2. The system shall allow for CRUD functionality for Screen Time.
+3. The system shall allow for CRUD functionality for Exercise.
+4. The system shall allow parents to create and manage child profiles.
+5. The system shall store and protect family and child data in accordance with privacy requirements.
+
+---
+
+### Event-Driven Requirements
+
+These requirements are triggered by a specific event or user action.
+
+1. When goals are added, the system will remind the user of their preference.
+2. When a parent logs a healthy food, the system shall update the child's daily nutrition summary.
+3. When a parent logs a physical activity, the system shall update the child's daily activity summary and streaks.
+
+---
+
+### State-Driven Requirements
+
+These requirements apply continuously while the system is in a particular state.
+
+1. While a child's daily screen-time limit has been reached, the system shall display a gentle notification to the parent indicating the limit has been met.
+2. While a parent is setting or adjusting goals, the system shall provide age-appropriate guidance and examples.
+3. While a child has an active habit streak, the system shall display positive reinforcement without referencing weight or body size.
+4. While a child's daily habits are incomplete, the system shall indicate which categories (nutrition, exercise, or screen time) still need attention.
 
 ---
 
