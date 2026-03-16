@@ -39,11 +39,80 @@
   <main>
     <section class="section">
       <div class="container">
-        <!-- Fitness view content goes here -->
+        <div class="fitness-layout">
+          <!-- Child selector -->
+          <div class="fitness-header">
+            <div class="child-selector">
+              <label for="child-select">Select child</label>
+              <select id="child-select" class="fitness-select">
+                <option value="">— Choose a child —</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Chart: Minutes exercised over time -->
+          <div class="fitness-chart-card">
+            <h2>Minutes Exercised</h2>
+            <p class="fitness-chart-desc">Daily activity history (last 14 days)</p>
+            <div class="chart-wrapper">
+              <canvas id="minutes-chart" aria-label="Minutes exercised per day"></canvas>
+            </div>
+            <p id="chart-empty-msg" class="fitness-empty-msg" style="display: none;">No activity data yet. Log activities below to see your history.</p>
+          </div>
+
+          <!-- Add activity form -->
+          <div class="fitness-form-card">
+            <h2>Log Activity</h2>
+            <form id="activity-form" class="fitness-form">
+              <div class="form-row">
+                <label for="activity-type">Activity type</label>
+                <select id="activity-type" class="fitness-input" required>
+                  <option value="">— Select —</option>
+                  <option value="Running">Running</option>
+                  <option value="Walking">Walking</option>
+                  <option value="Swimming">Swimming</option>
+                  <option value="Cycling">Cycling</option>
+                  <option value="Playtime">Playtime</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Dance">Dance</option>
+                  <option value="Yoga">Yoga</option>
+                  <option value="Other">Other (specify below)</option>
+                </select>
+              </div>
+              <div class="form-row" id="custom-activity-row" style="display: none;">
+                <label for="activity-custom">Custom activity name</label>
+                <input type="text" id="activity-custom" class="fitness-input" maxlength="50" placeholder="e.g. Soccer, Gymnastics">
+              </div>
+              <div class="form-row">
+                <label for="activity-duration">Duration (minutes)</label>
+                <input type="number" id="activity-duration" class="fitness-input" min="1" max="600" placeholder="e.g. 30" required>
+              </div>
+              <div class="form-row form-row-optional">
+                <label for="activity-steps">Steps (optional)</label>
+                <input type="number" id="activity-steps" class="fitness-input" min="0" placeholder="e.g. 5000">
+              </div>
+              <div class="form-row form-row-optional">
+                <label for="activity-calories">Calories burned (optional)</label>
+                <input type="number" id="activity-calories" class="fitness-input" min="0" placeholder="e.g. 150">
+              </div>
+              <button type="submit" class="fitness-btn">Add Activity</button>
+            </form>
+            <p id="activity-form-msg" class="fitness-msg" aria-live="polite"></p>
+          </div>
+
+          <!-- Activity list -->
+          <div class="fitness-list-card">
+            <h2>Activity History</h2>
+            <p id="list-empty-msg" class="fitness-empty-msg" style="display: none;">No activities yet. Log an activity above to get started.</p>
+            <ul id="activity-list" class="activity-list"></ul>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="assets/js/script.js"></script>
+  <script src="assets/js/fitness.js"></script>
 </body>
 </html>

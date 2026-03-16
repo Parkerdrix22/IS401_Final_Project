@@ -46,3 +46,14 @@ INSERT INTO goals (goalid, userid, childid, category, targetvalue, goaltype, val
 (10, 6, 9, 'Reading',     30,    'Duration',          25, 'minutes',  '2026-02-01', '2026-02-28', 'Daily',   FALSE);
 
 SELECT setval('goals_goalid_seq', 10);
+
+-- Activity logs (for fitness page chart and list)
+INSERT INTO activitylogs (childid, activitytype, timecreated, duration, steps, caloriesburned, repeatingflag) VALUES
+(1, 'Running',   '2026-03-14 08:00:00', 25, 3200, 120, FALSE),
+(1, 'Walking',   '2026-03-14 16:30:00', 15, 1800, NULL, FALSE),
+(1, 'Playtime',  '2026-03-15 10:00:00', 45, NULL, NULL, FALSE),
+(1, 'Swimming',  '2026-03-16 14:00:00', 30, NULL, 180, FALSE),
+(1, 'Running',   '2026-03-16 07:30:00', 20, 2500, 95, FALSE),
+(2, 'Cycling',   '2026-03-15 09:00:00', 40, NULL, 200, FALSE),
+(2, 'Sports',    '2026-03-16 15:00:00', 60, 5000, 280, FALSE);
+
