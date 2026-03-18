@@ -13,9 +13,10 @@ INSERT INTO users (userid, username, passwordhash, firstname, lastname, email, u
 (7,  'coachkim',   'a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3', 'Kim',      'Nguyen',   'kim@healthyhabits.com',     'coach',   '2025-01-05 08:00:00', '2026-02-17 10:30:00'),
 (8,  'nutrijess',  'b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4', 'Jessica',  'Adams',    'jessica@healthyhabits.com', 'coach',   '2025-01-08 09:00:00', '2026-02-16 14:00:00'),
 (9,  'adminalex',  'c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5', 'Alex',     'Rivera',   'alex@healthyhabits.com',    'admin',   '2025-01-01 00:00:00', '2026-02-17 12:00:00'),
-(10, 'tblake',     'd5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6', 'Tanya',    'Blake',    'tanya@healthyhabits.com',   'parent',  '2025-06-01 11:00:00', '2026-02-13 16:30:00');
+(10, 'tblake',     'd5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6', 'Tanya',    'Blake',    'tanya@healthyhabits.com',   'parent',  '2025-06-01 11:00:00', '2026-02-13 16:30:00'),
+(11, 'demo_parent','$2b$10$yqyOtHk7R1iL2vLgVjw5MuYvR4q7pz3zT1jly6.vJLTNcSSpMoCyG', 'Demo', 'Parent', 'demo@healthyhabits.com', 'parent', NOW(), NULL);
 
-SELECT setval('users_userid_seq', 10);
+SELECT setval('users_userid_seq', 11);
 
 -- Children
 INSERT INTO children (childid, userid, firstname, lastname, birthdate, age, height, weight, datecreated) VALUES

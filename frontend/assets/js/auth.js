@@ -1,4 +1,10 @@
-const API_BASE = window.location.origin;
+const API_BASE = (() => {
+  const { protocol, hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `${protocol}//${hostname}:3000`;
+  }
+  return window.location.origin;
+})();
 
 function redirectToHome() {
   // Prefer app root; fallback keeps compatibility when opened as static files.

@@ -162,6 +162,13 @@ This starts:
 - Backend API at `http://localhost:3000`
 - Frontend at `http://localhost:8080`
 
+### Demo Login (localhost)
+
+After running `npm run setup` (or `npm run seed` on a fresh schema), you can sign in with:
+
+- Username: `demo_parent`
+- Password: `demo1234`
+
 **Run separately:**
 
 ```bash
