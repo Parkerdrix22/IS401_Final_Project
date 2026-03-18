@@ -40,20 +40,11 @@
     <section class="section">
       <div class="container">
         <div class="fitness-layout">
-          <!-- Child selector -->
-          <div class="fitness-header">
-            <div class="child-selector">
-              <label for="child-select">Select child</label>
-              <select id="child-select" class="fitness-select">
-                <option value="">— Choose a child —</option>
-              </select>
-            </div>
-          </div>
 
           <!-- Chart: Minutes exercised over time -->
           <div class="fitness-chart-card">
-            <h2>Minutes Exercised</h2>
-            <p class="fitness-chart-desc">Daily activity history (last 14 days)</p>
+            <h2 style="text-align: center;">Minutes Exercised</h2>
+            <p class="fitness-chart-desc" style="text-align: center;">Daily activity history (last 14 days)</p>
             <div class="chart-wrapper">
               <canvas id="minutes-chart" aria-label="Minutes exercised per day"></canvas>
             </div>
@@ -62,7 +53,8 @@
 
           <!-- Add activity form -->
           <div class="fitness-form-card">
-            <h2>Log Activity</h2>
+            <h2 style="text-align: center;">Log Activity</h2>
+
             <form id="activity-form" class="fitness-form">
               <div class="form-row">
                 <label for="activity-type">Activity type</label>

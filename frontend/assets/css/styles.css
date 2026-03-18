@@ -752,9 +752,17 @@ h1 {
   margin: 0 0 1rem 0;
 }
 
+.fitness-chart-card {
+  width: min(100%, 1080px);
+  margin-inline: auto;
+}
+
 .chart-wrapper {
   position: relative;
-  height: 220px;
+  width: min(100%, 1000px);
+  height: 320px;
+  margin-left: clamp(24px, 4vw, 56px);
+  margin-right: auto;
   margin-bottom: 0.5rem;
 }
 
@@ -857,6 +865,14 @@ h1 {
 .activity-item-meta {
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .chart-wrapper {
+    margin-left: auto;
+    margin-right: auto;
+    height: 240px;
+  }
 }
 
 .activity-delete {
