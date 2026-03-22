@@ -7,8 +7,13 @@
   const chartEmptyMsg = document.getElementById('chart-empty-msg');
   const listEmptyMsg = document.getElementById('list-empty-msg');
   const formMsg = document.getElementById('activity-form-msg');
+  const prevDayBtn = document.getElementById('fitness-prev-day');
+  const nextDayBtn = document.getElementById('fitness-next-day');
+  const dayNameEl = document.getElementById('fitness-day-name');
+  const dayDateEl = document.getElementById('fitness-day-date');
 
   let chart = null;
+  let selectedDate = new Date();
 
   async function api(method, path, body) {
     const opts = {
@@ -37,6 +42,10 @@
       const saved = sessionStorage.getItem('fitness-childid');
       if (saved && children.some(c => String(c.childid) === saved)) {
         childSelect.value = saved;
+        loadData();
+      } else if (children.length > 0) {
+        childSelect.value = String(children[0].childid);
+        sessionStorage.setItem('fitness-childid', childSelect.value);
         loadData();
       }
     } catch (e) {
@@ -69,24 +78,54 @@
     }
   }
 
+  function toLocalDateKey(value) {
+    const d = value ? new Date(value) : new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function normalizeToDateOnly(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function getWeekDates(anchorDate) {
+    const start = normalizeToDateOnly(anchorDate);
+    start.setDate(start.getDate() - start.getDay()); // Sunday
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }
+
+  function renderSelectedDay() {
+    if (dayNameEl) {
+      dayNameEl.textContent = selectedDate.toLocaleDateString(undefined, { weekday: 'long' });
+    }
+    if (dayDateEl) {
+      dayDateEl.textContent = selectedDate.toLocaleDateString(undefined, {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  }
+
   function aggregateMinutesByDate(activities) {
     const byDate = {};
     activities.forEach(a => {
-      const d = a.timecreated ? new Date(a.timecreated) : new Date();
-      const key = d.toISOString().slice(0, 10);
+      const key = toLocalDateKey(a.timecreated);
       byDate[key] = (byDate[key] || 0) + (Number(a.duration) || 0);
     });
     return byDate;
   }
 
   function getLast14Days() {
-    const days = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      days.push(d.toISOString().slice(0, 10));
-    }
-    return days;
+    return getWeekDates(selectedDate).map(toLocalDateKey);
   }
 
   function renderChart(activities) {
@@ -107,10 +146,7 @@
     chart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels.map(d => {
-          const [y, m, day] = d.split('-');
-          return `${m}/${day}`;
-        }),
+        labels: getWeekDates(selectedDate).map(d => d.toLocaleDateString(undefined, { weekday: 'short' })),
         datasets: [{
           label: 'Minutes',
           data,
@@ -121,7 +157,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
         },
@@ -185,6 +221,7 @@
   }
 
   async function loadData() {
+    renderSelectedDay();
     const activities = await loadActivities();
     renderChart(activities);
     renderList(activities);
@@ -219,6 +256,7 @@
         duration,
         steps: steps ? parseInt(steps, 10) : null,
         caloriesburned: caloriesburned ? parseInt(caloriesburned, 10) : null,
+        timecreated: `${toLocalDateKey(selectedDate)}T12:00:00`,
       });
       showFormMsg('Activity added!', 'success');
       activityForm.reset();
@@ -229,6 +267,17 @@
   });
 
   document.addEventListener('DOMContentLoaded', () => {
+    selectedDate = normalizeToDateOnly(new Date());
+    prevDayBtn?.addEventListener('click', () => {
+      selectedDate.setDate(selectedDate.getDate() - 1);
+      selectedDate = normalizeToDateOnly(selectedDate);
+      loadData();
+    });
+    nextDayBtn?.addEventListener('click', () => {
+      selectedDate.setDate(selectedDate.getDate() + 1);
+      selectedDate = normalizeToDateOnly(selectedDate);
+      loadData();
+    });
     loadChildren();
   });
 })();

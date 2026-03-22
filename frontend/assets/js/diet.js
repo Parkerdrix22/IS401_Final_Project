@@ -326,7 +326,7 @@ function () {
       const slot = getMealSlotEl(meal);
       if (!slot) return;
       slot.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-      slot.tabIndex = disabled ? -1 : 0;
+      slot.tabIndex = 0;
       slot.classList.toggle('is-disabled', disabled);
     });
 
@@ -424,7 +424,10 @@ function () {
       if (!inputEl || !slotEl) return;
 
       const openPicker = () => {
-        if (inputEl.disabled) return;
+        if (!selectedChildId || inputEl.disabled) {
+          window.alert('Please select a child first to add meal images.');
+          return;
+        }
         inputEl.click();
       };
 

@@ -1,4 +1,6 @@
-const API_BASE = window.location.origin;
+const API_BASE = window.location.port === '8080'
+  ? 'http://localhost:3000'
+  : window.location.origin;
 
 function redirectToHome() {
   // Prefer app root; fallback keeps compatibility when opened as static files.
