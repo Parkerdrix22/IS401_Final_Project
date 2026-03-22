@@ -41,6 +41,14 @@
       <div class="container">
         <div class="fitness-layout">
 
+          <div class="fitness-header child-selector">
+            <label for="child-select">Log activity for</label>
+            <select id="child-select" class="fitness-select" disabled aria-describedby="fitness-auth-hint">
+              <option value="">— Loading… —</option>
+            </select>
+            <p id="fitness-auth-hint" class="fitness-empty-msg" style="margin-top: 0.5rem;"></p>
+          </div>
+
           <!-- Chart: Minutes exercised over time -->
           <div class="fitness-chart-card">
             <h2 style="text-align: center;">Minutes Exercised</h2>

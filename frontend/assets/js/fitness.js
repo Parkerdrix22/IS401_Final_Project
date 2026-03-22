@@ -3,14 +3,17 @@
 
   const childSelect = document.getElementById('child-select');
   const activityForm = document.getElementById('activity-form');
+  const activitySubmitBtn = activityForm?.querySelector('button[type="submit"]');
   const activityList = document.getElementById('activity-list');
   const chartEmptyMsg = document.getElementById('chart-empty-msg');
   const listEmptyMsg = document.getElementById('list-empty-msg');
   const formMsg = document.getElementById('activity-form-msg');
+  const authHint = document.getElementById('fitness-auth-hint');
 
   let chart = null;
   let isLoggedIn = false;
   let activeChildId = null;
+  let childrenCache = [];
   let guestActivities = [];
   const ACTIVITY_COLORS = {
     Running: '#E4572E',
@@ -47,6 +50,19 @@
     formMsg.className = 'fitness-msg' + (type ? ' ' + type : '');
   }
 
+  function setAuthHint(text) {
+    if (authHint) authHint.textContent = text || '';
+  }
+
+  function updateSubmitDisabled() {
+    if (!activitySubmitBtn) return;
+    if (!isLoggedIn) {
+      activitySubmitBtn.disabled = false;
+      return;
+    }
+    activitySubmitBtn.disabled = childrenCache.length === 0 || activeChildId == null;
+  }
+
   async function loadChildren() {
     try {
       const children = await api('GET', '/children');
@@ -61,29 +77,35 @@
       } else {
         activeChildId = null;
       }
+      childrenCache = children;
+      setAuthHint('');
       if (childSelect) {
         childSelect.innerHTML = '<option value="">— Choose a child —</option>' +
           children.map(c => `<option value="${c.childid}">${c.firstname} ${c.lastname}</option>`).join('');
-        childSelect.value = savedExists ? String(saved) : '';
+        childSelect.value = activeChildId != null ? String(activeChildId) : '';
         childSelect.disabled = false;
       }
 
       if (children.length === 0) {
-        showFormMsg('No child profile found. Please add a child first.', 'error');
+        showFormMsg('No child profile found. Add a child under your account to log activity.', 'error');
       } else {
         showFormMsg('', '');
       }
+      updateSubmitDisabled();
       loadData();
     } catch (e) {
       const status = Number(e?.status || 0);
       activeChildId = null;
+      childrenCache = [];
       if (status === 401) {
         isLoggedIn = false;
         if (childSelect) {
           childSelect.innerHTML = '<option value="">— Login to select a child —</option>';
           childSelect.disabled = true;
         }
+        setAuthHint('Log in to save activities to your account. You can still preview the form below.');
         showFormMsg('', '');
+        updateSubmitDisabled();
         loadData();
         return;
       }
@@ -93,7 +115,9 @@
         childSelect.disabled = true;
       }
       activeChildId = null;
+      setAuthHint('');
       showFormMsg('Failed to load child profile.', 'error');
+      updateSubmitDisabled();
     }
   }
 
@@ -106,6 +130,7 @@
     } else {
       activeChildId = null;
     }
+    updateSubmitDisabled();
     loadData();
   });
 
@@ -289,15 +314,21 @@
 
   activityForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    let activitytype = document.getElementById('activity-type')?.value?.trim();
-    if (activitytype === 'Other') {
-      activitytype = document.getElementById('activity-custom')?.value?.trim() || 'Other';
+    const typeSelectVal = document.getElementById('activity-type')?.value?.trim();
+    let activitytype = typeSelectVal;
+    if (typeSelectVal === 'Other') {
+      const custom = document.getElementById('activity-custom')?.value?.trim();
+      if (!custom) {
+        showFormMsg('Please enter a name for your custom activity.', 'error');
+        return;
+      }
+      activitytype = custom;
     }
     const duration = parseInt(document.getElementById('activity-duration')?.value, 10);
     const steps = document.getElementById('activity-steps')?.value;
     const caloriesburned = document.getElementById('activity-calories')?.value;
 
-    if (!activitytype || !duration || duration < 1) {
+    if (!activitytype || !Number.isFinite(duration) || duration < 1) {
       showFormMsg('Please enter activity type and duration.', 'error');
       return;
     }
@@ -313,6 +344,7 @@
       addGuestActivity(payload);
       showFormMsg('Added for preview only. Log in to save records.', 'success');
       activityForm.reset();
+      if (customActivityRow) customActivityRow.style.display = 'none';
       loadData();
       return;
     }
@@ -329,8 +361,9 @@
         childid: Number(childid),
         ...payload,
       });
-      showFormMsg('Activity added!', 'success');
+      showFormMsg('Activity saved for this child.', 'success');
       activityForm.reset();
+      if (customActivityRow) customActivityRow.style.display = 'none';
       loadData();
     } catch (err) {
       showFormMsg(err.message || 'Failed to add activity', 'error');
