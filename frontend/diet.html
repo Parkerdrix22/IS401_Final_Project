@@ -12,14 +12,14 @@
 <body>
   <nav class="site-nav" aria-label="Primary navigation">
     <div class="container nav-content">
-      <a href="/frontend/" class="nav-logo" aria-label="Home"></a>
+      <a href="index.html" class="nav-logo" aria-label="Home"></a>
       <button class="mobile-menu-toggle" aria-label="Toggle navigation menu">
         <span></span>
         <span></span>
         <span></span>
       </button>
       <ul class="nav-links">
-        <li><a href="/frontend/" class="nav-link">Home</a></li>
+        <li><a href="index.html" class="nav-link">Home</a></li>
         <li><a href="diet.html" class="nav-link active">Diet</a></li>
         <li><a href="fitness.html" class="nav-link">Fitness</a></li>
         <li><a href="screentime.html" class="nav-link">Screen Time</a></li>
@@ -39,11 +39,113 @@
   <main>
     <section class="section">
       <div class="container">
-        <!-- Diet view content goes here -->
+        <div class="diet-layout">
+          <div class="diet-top-row">
+            <div class="diet-child-card">
+              <div class="child-selector diet-child-selector">
+                <label for="diet-child-select">Select child</label>
+                <select id="diet-child-select" class="diet-input">
+                  <option value="">-- Choose a child --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="diet-date-card">
+              <div class="diet-date-nav">
+                <button id="diet-prev-day" class="diet-date-btn" type="button" aria-label="Go to previous day">&#8592;</button>
+                <div>
+                  <h2 id="diet-date-heading">Tuesday</h2>
+                  <p id="diet-current-date" class="diet-current-date"></p>
+                </div>
+                <button id="diet-next-day" class="diet-date-btn" type="button" aria-label="Go to next day">&#8594;</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="diet-meals-grid">
+            <article class="diet-meal-card" data-meal="breakfast">
+              <h3>Breakfast</h3>
+              <div class="meal-image-slot" role="button" tabindex="0" aria-label="Upload breakfast image">
+                Add breakfast image
+              </div>
+              <input id="breakfast-image-input" class="meal-image-input" type="file" accept="image/*" hidden>
+              <div class="form-row">
+                <label for="breakfast-time">Time</label>
+                <input id="breakfast-time" class="diet-input" type="time">
+              </div>
+              <div class="form-row">
+                <label for="breakfast-food">What did they eat?</label>
+                <input id="breakfast-food" class="diet-input" type="text" maxlength="120" placeholder="e.g. Oatmeal and berries">
+              </div>
+            </article>
+
+            <article class="diet-meal-card" data-meal="lunch">
+              <h3>Lunch</h3>
+              <div class="meal-image-slot" role="button" tabindex="0" aria-label="Upload lunch image">
+                Add lunch image
+              </div>
+              <input id="lunch-image-input" class="meal-image-input" type="file" accept="image/*" hidden>
+              <div class="form-row">
+                <label for="lunch-time">Time</label>
+                <input id="lunch-time" class="diet-input" type="time">
+              </div>
+              <div class="form-row">
+                <label for="lunch-food">What did they eat?</label>
+                <input id="lunch-food" class="diet-input" type="text" maxlength="120" placeholder="e.g. Turkey sandwich and fruit">
+              </div>
+            </article>
+
+            <article class="diet-meal-card" data-meal="dinner">
+              <h3>Dinner</h3>
+              <div class="meal-image-slot" role="button" tabindex="0" aria-label="Upload dinner image">
+                Add dinner image
+              </div>
+              <input id="dinner-image-input" class="meal-image-input" type="file" accept="image/*" hidden>
+              <div class="form-row">
+                <label for="dinner-time">Time</label>
+                <input id="dinner-time" class="diet-input" type="time">
+              </div>
+              <div class="form-row">
+                <label for="dinner-food">What did they eat?</label>
+                <input id="dinner-food" class="diet-input" type="text" maxlength="120" placeholder="e.g. Chicken, rice, and vegetables">
+              </div>
+            </article>
+          </div>
+
+          <div class="diet-card">
+            <div class="diet-card-header">
+              <h2>Snacks</h2>
+              <button id="add-snack-btn" class="diet-btn" type="button">Add Snack</button>
+            </div>
+            <p class="diet-card-desc">Track snacks throughout the day.</p>
+            <div id="snack-list" class="snack-list" aria-live="polite"></div>
+          </div>
+
+          <div class="diet-card">
+            <h2>Hydration</h2>
+            <p class="diet-card-desc">Enter ounces of water and milk consumed today.</p>
+            <div class="diet-hydration-grid">
+              <div class="form-row">
+                <label for="water-oz">Water (oz)</label>
+                <input id="water-oz" class="diet-input" type="number" min="0" max="300" step="1" placeholder="0">
+              </div>
+              <div class="form-row">
+                <label for="milk-oz">Milk (oz)</label>
+                <input id="milk-oz" class="diet-input" type="number" min="0" max="300" step="1" placeholder="0">
+              </div>
+              <div class="diet-total-hydration">
+                <span>Total Hydration</span>
+                <strong id="hydration-total-value">0 oz</strong>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </section>
   </main>
 
   <script src="assets/js/script.js"></script>
+  <script src="assets/js/diet.js"></script>
 </body>
 </html>

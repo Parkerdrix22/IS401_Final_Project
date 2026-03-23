@@ -12,14 +12,14 @@
 <body>
   <nav class="site-nav" aria-label="Primary navigation">
     <div class="container nav-content">
-      <a href="/frontend/" class="nav-logo" aria-label="Home"></a>
+      <a href="index.html" class="nav-logo" aria-label="Home"></a>
       <button class="mobile-menu-toggle" aria-label="Toggle navigation menu">
         <span></span>
         <span></span>
         <span></span>
       </button>
       <ul class="nav-links">
-        <li><a href="/frontend/" class="nav-link">Home</a></li>
+        <li><a href="index.html" class="nav-link">Home</a></li>
         <li><a href="diet.html" class="nav-link">Diet</a></li>
         <li><a href="fitness.html" class="nav-link active">Fitness</a></li>
         <li><a href="screentime.html" class="nav-link">Screen Time</a></li>
@@ -40,11 +40,28 @@
     <section class="section">
       <div class="container">
         <div class="fitness-layout">
+          <!-- Child selector -->
+          <div class="fitness-header">
+            <div class="child-selector">
+              <label for="child-select">Select child</label>
+              <select id="child-select" class="fitness-select">
+                <option value="">— Choose a child —</option>
+              </select>
+            </div>
+            <div class="fitness-day-card">
+              <button id="fitness-prev-day" class="fitness-day-btn" type="button" aria-label="Previous day">&#8592;</button>
+              <div class="fitness-day-info">
+                <p id="fitness-day-name" class="fitness-day-name">Sunday</p>
+                <p id="fitness-day-date" class="fitness-day-date"></p>
+              </div>
+              <button id="fitness-next-day" class="fitness-day-btn" type="button" aria-label="Next day">&#8594;</button>
+            </div>
+          </div>
 
-          <!-- Chart: Minutes exercised over time -->
+          <!-- Chart: Minutes exercised this week -->
           <div class="fitness-chart-card">
-            <h2 style="text-align: center;">Minutes Exercised</h2>
-            <p class="fitness-chart-desc" style="text-align: center;">Daily activity history (last 14 days)</p>
+            <h2>Minutes Exercised</h2>
+            <p class="fitness-chart-desc">Sunday through Saturday (selected week)</p>
             <div class="chart-wrapper">
               <canvas id="minutes-chart" aria-label="Minutes exercised per day"></canvas>
             </div>

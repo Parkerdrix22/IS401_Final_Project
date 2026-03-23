@@ -7,22 +7,13 @@
   const chartEmptyMsg = document.getElementById('chart-empty-msg');
   const listEmptyMsg = document.getElementById('list-empty-msg');
   const formMsg = document.getElementById('activity-form-msg');
+  const prevDayBtn = document.getElementById('fitness-prev-day');
+  const nextDayBtn = document.getElementById('fitness-next-day');
+  const dayNameEl = document.getElementById('fitness-day-name');
+  const dayDateEl = document.getElementById('fitness-day-date');
 
   let chart = null;
-  let isLoggedIn = false;
-  let activeChildId = null;
-  let guestActivities = [];
-  const ACTIVITY_COLORS = {
-    Running: '#E4572E',
-    Walking: '#4C78A8',
-    Swimming: '#2E86AB',
-    Cycling: '#59A14F',
-    Playtime: '#F28E2B',
-    Sports: '#B07AA1',
-    Dance: '#EDC948',
-    Yoga: '#76B7B2',
-    Other: '#9C755F',
-  };
+  let selectedDate = new Date();
 
   async function api(method, path, body) {
     const opts = {
@@ -52,26 +43,13 @@
       const children = await api('GET', '/children');
       isLoggedIn = true;
       const saved = sessionStorage.getItem('fitness-childid');
-      const savedExists = saved && children.some(c => String(c.childid) === saved);
-      if (savedExists) {
-        activeChildId = Number(saved);
+      if (saved && children.some(c => String(c.childid) === saved)) {
+        childSelect.value = saved;
+        loadData();
       } else if (children.length > 0) {
-        activeChildId = Number(children[0].childid);
-        sessionStorage.setItem('fitness-childid', String(activeChildId));
-      } else {
-        activeChildId = null;
-      }
-      if (childSelect) {
-        childSelect.innerHTML = '<option value="">— Choose a child —</option>' +
-          children.map(c => `<option value="${c.childid}">${c.firstname} ${c.lastname}</option>`).join('');
-        childSelect.value = savedExists ? String(saved) : '';
-        childSelect.disabled = false;
-      }
-
-      if (children.length === 0) {
-        showFormMsg('No child profile found. Please add a child first.', 'error');
-      } else {
-        showFormMsg('', '');
+        childSelect.value = String(children[0].childid);
+        sessionStorage.setItem('fitness-childid', childSelect.value);
+        loadData();
       }
       loadData();
     } catch (e) {
@@ -129,54 +107,54 @@
     }
   }
 
-  function addGuestActivity(payload) {
-    const now = new Date().toISOString();
-    guestActivities.unshift({
-      activityid: `guest-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-      activitytype: payload.activitytype,
-      duration: payload.duration,
-      steps: payload.steps,
-      caloriesburned: payload.caloriesburned,
-      timecreated: now,
-    });
+  function toLocalDateKey(value) {
+    const d = value ? new Date(value) : new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
-  function hexToRgba(hex, alpha) {
-    const normalized = hex.replace('#', '');
-    const int = parseInt(normalized, 16);
-    const r = (int >> 16) & 255;
-    const g = (int >> 8) & 255;
-    const b = int & 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  function normalizeToDateOnly(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
-  function getActivityColor(type, alpha = 1) {
-    const base = ACTIVITY_COLORS[type] || ACTIVITY_COLORS.Other;
-    return hexToRgba(base, alpha);
+  function getWeekDates(anchorDate) {
+    const start = normalizeToDateOnly(anchorDate);
+    start.setDate(start.getDate() - start.getDay()); // Sunday
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      days.push(d);
+    }
+    return days;
   }
 
-  function aggregateMinutesByDateAndType(activities, labels) {
-    const labelSet = new Set(labels);
-    const byType = {};
+  function renderSelectedDay() {
+    if (dayNameEl) {
+      dayNameEl.textContent = selectedDate.toLocaleDateString(undefined, { weekday: 'long' });
+    }
+    if (dayDateEl) {
+      dayDateEl.textContent = selectedDate.toLocaleDateString(undefined, {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  }
+
+  function aggregateMinutesByDate(activities) {
+    const byDate = {};
     activities.forEach(a => {
-      const d = a.timecreated ? new Date(a.timecreated) : new Date();
-      const key = d.toISOString().slice(0, 10);
-      if (!labelSet.has(key)) return;
-      const type = String(a.activitytype || 'Other').trim() || 'Other';
-      if (!byType[type]) byType[type] = {};
-      byType[type][key] = (byType[type][key] || 0) + (Number(a.duration) || 0);
+      const key = toLocalDateKey(a.timecreated);
+      byDate[key] = (byDate[key] || 0) + (Number(a.duration) || 0);
     });
     return byType;
   }
 
   function getLast14Days() {
-    const days = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      days.push(d.toISOString().slice(0, 10));
-    }
-    return days;
+    return getWeekDates(selectedDate).map(toLocalDateKey);
   }
 
   function renderChart(activities) {
@@ -204,15 +182,18 @@
     chart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels.map(d => {
-          const [y, m, day] = d.split('-');
-          return `${m}/${day}`;
-        }),
-        datasets,
+        labels: getWeekDates(selectedDate).map(d => d.toLocaleDateString(undefined, { weekday: 'short' })),
+        datasets: [{
+          label: 'Minutes',
+          data,
+          backgroundColor: 'rgba(46, 154, 87, 0.7)',
+          borderColor: 'rgba(46, 154, 87, 1)',
+          borderWidth: 1,
+        }],
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: true },
         },
@@ -282,6 +263,7 @@
   }
 
   async function loadData() {
+    renderSelectedDay();
     const activities = await loadActivities();
     renderChart(activities);
     renderList(activities);
@@ -327,7 +309,11 @@
     try {
       await api('POST', '/activitylogs', {
         childid: Number(childid),
-        ...payload,
+        activitytype,
+        duration,
+        steps: steps ? parseInt(steps, 10) : null,
+        caloriesburned: caloriesburned ? parseInt(caloriesburned, 10) : null,
+        timecreated: `${toLocalDateKey(selectedDate)}T12:00:00`,
       });
       showFormMsg('Activity added!', 'success');
       activityForm.reset();
@@ -338,6 +324,17 @@
   });
 
   document.addEventListener('DOMContentLoaded', () => {
+    selectedDate = normalizeToDateOnly(new Date());
+    prevDayBtn?.addEventListener('click', () => {
+      selectedDate.setDate(selectedDate.getDate() - 1);
+      selectedDate = normalizeToDateOnly(selectedDate);
+      loadData();
+    });
+    nextDayBtn?.addEventListener('click', () => {
+      selectedDate.setDate(selectedDate.getDate() + 1);
+      selectedDate = normalizeToDateOnly(selectedDate);
+      loadData();
+    });
     loadChildren();
   });
 })();

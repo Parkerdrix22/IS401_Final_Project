@@ -39,12 +39,12 @@ router.get('/:id', async (req, res) => {
 
 // POST /activitylogs
 router.post('/', async (req, res) => {
-  const { childid, activitytype, duration, steps, caloriesburned, repeatingflag } = req.body;
+  const { childid, activitytype, duration, steps, caloriesburned, repeatingflag, timecreated } = req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO activitylogs (childid, activitytype, duration, steps, caloriesburned, repeatingflag)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [childid, activitytype, duration, steps ?? null, caloriesburned ?? null, repeatingflag ?? false]
+      `INSERT INTO activitylogs (childid, activitytype, timecreated, duration, steps, caloriesburned, repeatingflag)
+       VALUES ($1, $2, COALESCE($3, NOW()), $4, $5, $6, $7) RETURNING *`,
+      [childid, activitytype, timecreated ?? null, duration, steps ?? null, caloriesburned ?? null, repeatingflag ?? false]
     );
     res.status(201).json(result.rows[0]);
   } catch (err: any) {
