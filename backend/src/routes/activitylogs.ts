@@ -66,6 +66,7 @@ router.get('/:id', async (req, res) => {
 
 // POST /activitylogs
 router.post('/', async (req, res) => {
+<<<<<<< HEAD
   const { childid, activitytype, duration, steps, caloriesburned, repeatingflag } = req.body;
   const cid = Number(childid);
   if (!Number.isFinite(cid)) {
@@ -82,15 +83,24 @@ router.post('/', async (req, res) => {
     res.status(400).json({ error: 'duration must be a positive whole number (minutes)' });
     return;
   }
+=======
+  const { childid, activitytype, duration, steps, caloriesburned, repeatingflag, timecreated } = req.body;
+>>>>>>> main
   try {
     if (!req.session.userId || !(await ownsChild(req.session.userId, cid))) {
       res.status(403).json({ error: 'Child not found or access denied' });
       return;
     }
     const result = await pool.query(
+<<<<<<< HEAD
       `INSERT INTO activitylogs (childid, activitytype, duration, steps, caloriesburned, repeatingflag)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [cid, typeTrim.slice(0, 50), dur, steps ?? null, caloriesburned ?? null, repeatingflag ?? false]
+=======
+      `INSERT INTO activitylogs (childid, activitytype, timecreated, duration, steps, caloriesburned, repeatingflag)
+       VALUES ($1, $2, COALESCE($3, NOW()), $4, $5, $6, $7) RETURNING *`,
+      [childid, activitytype, timecreated ?? null, duration, steps ?? null, caloriesburned ?? null, repeatingflag ?? false]
+>>>>>>> main
     );
     res.status(201).json(result.rows[0]);
   } catch (err: any) {

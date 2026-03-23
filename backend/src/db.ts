@@ -1,32 +1,43 @@
 import { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import dotenv from 'dotenv';
 
-// The .env contains a shell command string, not a plain connection URL.
-// Parse each parameter directly from the raw file content.
 const envPath = path.resolve(__dirname, '../../.env');
-const envContent = fs.readFileSync(envPath, 'utf-8');
+dotenv.config({ path: envPath });
+const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf-8') : '';
 
 const hostMatch = envContent.match(/RDSHOST="([^"]+)"/);
-const host = hostMatch ? hostMatch[1] : '';
-
-const portMatch    = envContent.match(/port=(\d+)/);
-const dbnameMatch  = envContent.match(/dbname=(\w+)/);
-const userMatch    = envContent.match(/\buser=(\w+)/);
+const portMatch = envContent.match(/port=(\d+)/);
+const dbnameMatch = envContent.match(/dbname=([^\s"]+)/);
+const userMatch = envContent.match(/\buser=([^\s"]+)/);
 const passwordMatch = envContent.match(/password=([^\s"]+)/);
-const sslcertMatch  = envContent.match(/sslrootcert=([^\s"]+)/);
+const sslcertMatch = envContent.match(/sslrootcert=([^\s"]+)/);
 
-const sslCertPath = sslcertMatch ? sslcertMatch[1] : '';
-let sslConfig: object = { rejectUnauthorized: false };
-if (sslCertPath && fs.existsSync(sslCertPath)) {
+function firstDefined(...values: Array<string | undefined>): string | undefined {
+  return values.find((value) => typeof value === 'string' && value.trim() !== '')?.trim();
+}
+
+const host = firstDefined(process.env.DB_HOST, process.env.RDSHOST, hostMatch?.[1]) ?? '';
+const port = Number(firstDefined(process.env.DB_PORT, process.env.PGPORT, portMatch?.[1]) ?? '5432');
+const database = firstDefined(process.env.DB_NAME, process.env.PGDATABASE, dbnameMatch?.[1]) ?? 'postgres';
+const user = firstDefined(process.env.DB_USER, process.env.PGUSER, userMatch?.[1]) ?? 'postgres';
+const password = firstDefined(process.env.DB_PASSWORD, process.env.PGPASSWORD, passwordMatch?.[1]) ?? '';
+const sslCertPath = firstDefined(process.env.DB_SSL_CERT, process.env.PGSSLROOTCERT, sslcertMatch?.[1]) ?? '';
+const sslEnabled = String(process.env.DB_SSL || '').toLowerCase() === 'true' || !!sslCertPath;
+
+let sslConfig: object | false = false;
+if (sslEnabled && sslCertPath && fs.existsSync(sslCertPath)) {
   sslConfig = { ca: fs.readFileSync(sslCertPath).toString() };
+} else if (sslEnabled) {
+  sslConfig = { rejectUnauthorized: false };
 }
 
 export const pool = new Pool({
   host,
-  port:     portMatch    ? parseInt(portMatch[1])    : 5432,
-  database: dbnameMatch  ? dbnameMatch[1]            : 'postgres',
-  user:     userMatch    ? userMatch[1]              : 'postgres',
-  password: passwordMatch ? passwordMatch[1]         : '',
+  port: Number.isFinite(port) ? port : 5432,
+  database,
+  user,
+  password,
   ssl: sslConfig,
 });

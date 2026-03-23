@@ -11,28 +11,62 @@ const router = Router();
 
 // POST /auth/register
 router.post('/register', async (req, res) => {
-  const { username, password, firstname, lastname, email, userrole } = req.body;
+  const { username, password, firstname, lastname, email, userrole, children } = req.body;
   if (!username || !password || !firstname || !lastname || !email) {
     res.status(400).json({ error: 'Missing required fields' });
     return;
   }
+
+  const role: string = userrole || 'parent';
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     const hash = await bcrypt.hash(password, 10);
-    const result = await pool.query(
+    const userResult = await client.query(
       `INSERT INTO users (username, passwordhash, firstname, lastname, email, userrole)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING userid, username, firstname, lastname, email, userrole`,
-      [username, hash, firstname, lastname, email, userrole || 'parent']
+      [username, hash, firstname, lastname, email, role]
     );
-    const user = result.rows[0];
+    const user = userResult.rows[0];
+
+    const createdChildren: any[] = [];
+    if (role === 'parent' && Array.isArray(children) && children.length > 0) {
+      for (const child of children) {
+        const cf = String(child.firstname || '').trim();
+        const cl = String(child.lastname || '').trim();
+        const bd = child.birthdate;
+        if (!cf || !cl || !bd) continue;
+
+        // Calculate age from birthdate server-side
+        const today = new Date();
+        const birth = new Date(bd);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+
+        const childResult = await client.query(
+          `INSERT INTO children (userid, firstname, lastname, birthdate, age, height, weight)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [user.userid, cf, cl, bd, Math.max(0, age), child.height || null, child.weight || null]
+        );
+        createdChildren.push(childResult.rows[0]);
+      }
+    }
+
+    await client.query('COMMIT');
     req.session.userId = user.userid;
-    res.status(201).json(user);
+    res.status(201).json({ ...user, children: createdChildren });
   } catch (err: any) {
+    await client.query('ROLLBACK');
     if (err.code === '23505') {
       res.status(409).json({ error: 'Username or email already exists' });
     } else {
       res.status(500).json({ error: 'Server error', detail: err.message });
     }
+  } finally {
+    client.release();
   }
 });
 

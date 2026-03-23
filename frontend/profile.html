@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Healthy Habits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="Primary navigation">
+    <div class="container nav-content">
+      <a href="index.html" class="nav-logo" aria-label="Home"></a>
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="diet.html" class="nav-link">Diet</a></li>
+        <li><a href="fitness.html" class="nav-link">Fitness</a></li>
+        <li><a href="screentime.html" class="nav-link">Screen Time</a></li>
+        <li><a href="goals.html" class="nav-link">Goals</a></li>
+        <li class="nav-auth"><a href="login.html" class="nav-link">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-content">
+      <h1>Profile</h1>
+      <p>Update your account and manage children profiles.</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="profile-layout">
+          <div class="profile-card">
+            <h2>Account Information</h2>
+            <form id="profile-form" class="profile-form">
+              <div class="form-row">
+                <label for="profile-username">Username</label>
+                <input id="profile-username" class="profile-input" type="text" maxlength="50" required>
+              </div>
+              <div class="form-row">
+                <label for="profile-firstname">First name</label>
+                <input id="profile-firstname" class="profile-input" type="text" maxlength="50" required>
+              </div>
+              <div class="form-row">
+                <label for="profile-lastname">Last name</label>
+                <input id="profile-lastname" class="profile-input" type="text" maxlength="50" required>
+              </div>
+              <div class="form-row">
+                <label for="profile-email">Email</label>
+                <input id="profile-email" class="profile-input" type="email" maxlength="50" required>
+              </div>
+              <div class="form-row">
+                <label for="profile-password">New password (optional)</label>
+                <input id="profile-password" class="profile-input" type="password" minlength="6" maxlength="100">
+              </div>
+              <button class="profile-btn" type="submit">Save Account Changes</button>
+            </form>
+            <p id="profile-msg" class="profile-msg" aria-live="polite"></p>
+          </div>
+
+          <div class="profile-card">
+            <h2>Add Child</h2>
+            <form id="child-form" class="profile-form">
+              <div class="form-row">
+                <label for="child-firstname">First name</label>
+                <input id="child-firstname" class="profile-input" type="text" maxlength="50" required>
+              </div>
+              <div class="form-row">
+                <label for="child-lastname">Last name</label>
+                <input id="child-lastname" class="profile-input" type="text" maxlength="50" required>
+              </div>
+              <div class="form-row">
+                <label for="child-birthdate">Birthdate</label>
+                <input id="child-birthdate" class="profile-input" type="date" required>
+              </div>
+              <div class="form-row">
+                <label for="child-age">Age</label>
+                <input id="child-age" class="profile-input" type="number" min="0" max="25" required>
+              </div>
+              <div class="form-row">
+                <label for="child-height">Height (optional)</label>
+                <input id="child-height" class="profile-input" type="number" min="0" step="0.01">
+              </div>
+              <div class="form-row">
+                <label for="child-weight">Weight (optional)</label>
+                <input id="child-weight" class="profile-input" type="number" min="0" step="0.01">
+              </div>
+              <button class="profile-btn" type="submit">Add Child</button>
+            </form>
+            <p id="child-msg" class="profile-msg" aria-live="polite"></p>
+          </div>
+
+          <div class="profile-card">
+            <h2>Your Children</h2>
+            <ul id="children-list" class="children-list"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p>&copy; <span id="current-year"></span> Healthy Habits. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="assets/js/script.js"></script>
+  <script src="assets/js/profile.js"></script>
+</body>
+</html>

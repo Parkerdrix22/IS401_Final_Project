@@ -12,9 +12,9 @@
 <body class="auth-page">
   <main class="auth-wrapper">
     <section class="auth-card" aria-labelledby="register-title">
-      <a href="/frontend/" class="auth-brand">Healthy Habits</a>
+      <a href="index.html" class="auth-brand">Healthy Habits</a>
       <h1 id="register-title">Create your account</h1>
-      <p class="auth-subtitle">Set up your parent account to get started.</p>
+      <p class="auth-subtitle">Set up your account to get started.</p>
 
       <form id="register-form" class="auth-form" novalidate>
         <label for="register-username">Username</label>
@@ -31,6 +31,21 @@
 
         <label for="register-password">Password</label>
         <input id="register-password" name="password" type="password" autocomplete="new-password" required>
+
+        <label for="register-role">Account type</label>
+        <select id="register-role" name="userrole">
+          <option value="parent">Parent</option>
+          <option value="coach">Coach</option>
+        </select>
+
+        <div id="children-section" class="children-section">
+          <div class="children-section-header">
+            <span class="children-section-title">Children</span>
+            <button type="button" id="add-child-btn" class="add-child-btn">+ Add Child</button>
+          </div>
+          <p class="children-section-hint">Add your child's profile. You can always add more later.</p>
+          <div id="children-list"></div>
+        </div>
 
         <button type="submit" class="auth-btn">Create Account</button>
       </form>
