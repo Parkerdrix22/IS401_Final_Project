@@ -40,13 +40,13 @@
     <section class="section">
       <div class="container">
         <div class="fitness-layout">
-          <!-- Child selector -->
           <div class="fitness-header">
             <div class="child-selector">
               <label for="child-select">Select child</label>
-              <select id="child-select" class="fitness-select">
+              <select id="child-select" class="fitness-select" aria-describedby="fitness-auth-hint">
                 <option value="">— Choose a child —</option>
               </select>
+              <p id="fitness-auth-hint" class="fitness-empty-msg" style="margin-top: 0.5rem;"></p>
             </div>
             <div class="fitness-day-card">
               <button id="fitness-prev-day" class="fitness-day-btn" type="button" aria-label="Previous day">&#8592;</button>
@@ -58,19 +58,6 @@
             </div>
           </div>
 
-<<<<<<< HEAD
-          <div class="fitness-header child-selector">
-            <label for="child-select">Log activity for</label>
-            <select id="child-select" class="fitness-select" disabled aria-describedby="fitness-auth-hint">
-              <option value="">— Loading… —</option>
-            </select>
-            <p id="fitness-auth-hint" class="fitness-empty-msg" style="margin-top: 0.5rem;"></p>
-          </div>
-
-          <!-- Chart: Minutes exercised over time -->
-=======
-          <!-- Chart: Minutes exercised this week -->
->>>>>>> main
           <div class="fitness-chart-card">
             <h2>Minutes Exercised</h2>
             <p class="fitness-chart-desc">Sunday through Saturday (selected week)</p>
@@ -80,7 +67,6 @@
             <p id="chart-empty-msg" class="fitness-empty-msg" style="display: none;">No activity data yet. Log activities below to see your history.</p>
           </div>
 
-          <!-- Add activity form -->
           <div class="fitness-form-card">
             <h2 style="text-align: center;">Log Activity</h2>
 
@@ -121,7 +107,6 @@
             <p id="activity-form-msg" class="fitness-msg" aria-live="polite"></p>
           </div>
 
-          <!-- Activity list -->
           <div class="fitness-list-card">
             <h2>Activity History</h2>
             <p id="list-empty-msg" class="fitness-empty-msg" style="display: none;">No activities yet. Log an activity above to get started.</p>
