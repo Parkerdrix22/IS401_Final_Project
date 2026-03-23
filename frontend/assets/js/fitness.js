@@ -24,7 +24,11 @@
     if (body && (method === 'POST' || method === 'PUT')) opts.body = JSON.stringify(body);
     const res = await fetch(`${API_BASE}${path}`, opts);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Request failed');
+    if (!res.ok) {
+      const error = new Error(data.error || 'Request failed');
+      error.status = res.status;
+      throw error;
+    }
     return data;
   }
 
@@ -37,8 +41,7 @@
   async function loadChildren() {
     try {
       const children = await api('GET', '/children');
-      childSelect.innerHTML = '<option value="">— Choose a child —</option>' +
-        children.map(c => `<option value="${c.childid}">${c.firstname} ${c.lastname}</option>`).join('');
+      isLoggedIn = true;
       const saved = sessionStorage.getItem('fitness-childid');
       if (saved && children.some(c => String(c.childid) === saved)) {
         childSelect.value = saved;
@@ -48,14 +51,39 @@
         sessionStorage.setItem('fitness-childid', childSelect.value);
         loadData();
       }
+      loadData();
     } catch (e) {
-      childSelect.innerHTML = '<option value="">— Error loading children —</option>';
+      const status = Number(e?.status || 0);
+      activeChildId = null;
+      if (status === 401) {
+        isLoggedIn = false;
+        if (childSelect) {
+          childSelect.innerHTML = '<option value="">— Login to select a child —</option>';
+          childSelect.disabled = true;
+        }
+        showFormMsg('', '');
+        loadData();
+        return;
+      }
+      isLoggedIn = true;
+      if (childSelect) {
+        childSelect.innerHTML = '<option value="">— Error loading children —</option>';
+        childSelect.disabled = true;
+      }
+      activeChildId = null;
+      showFormMsg('Failed to load child profile.', 'error');
     }
   }
 
   childSelect?.addEventListener('change', () => {
+    if (!isLoggedIn) return;
     const id = childSelect.value;
-    if (id) sessionStorage.setItem('fitness-childid', id);
+    if (id) {
+      activeChildId = Number(id);
+      sessionStorage.setItem('fitness-childid', id);
+    } else {
+      activeChildId = null;
+    }
     loadData();
   });
 
@@ -69,7 +97,8 @@
   });
 
   async function loadActivities() {
-    const childid = childSelect?.value;
+    if (!isLoggedIn) return guestActivities;
+    const childid = activeChildId;
     if (!childid) return [];
     try {
       return await api('GET', `/activitylogs?childid=${childid}`);
@@ -121,7 +150,7 @@
       const key = toLocalDateKey(a.timecreated);
       byDate[key] = (byDate[key] || 0) + (Number(a.duration) || 0);
     });
-    return byDate;
+    return byType;
   }
 
   function getLast14Days() {
@@ -129,14 +158,21 @@
   }
 
   function renderChart(activities) {
-    const byDate = aggregateMinutesByDate(activities);
     const labels = getLast14Days();
-    const data = labels.map(d => byDate[d] || 0);
+    const byType = aggregateMinutesByDateAndType(activities, labels);
+    const typeNames = Object.keys(byType);
+    const datasets = typeNames.map(type => ({
+      label: type,
+      data: labels.map(d => byType[type][d] || 0),
+      backgroundColor: getActivityColor(type, 0.72),
+      borderColor: getActivityColor(type, 1),
+      borderWidth: 1,
+    }));
 
     const ctx = document.getElementById('minutes-chart');
     if (!ctx) return;
 
-    const hasData = data.some(v => v > 0);
+    const hasData = datasets.some(ds => ds.data.some(v => v > 0));
     chartEmptyMsg.style.display = hasData ? 'none' : 'block';
     ctx.parentElement.style.display = hasData ? 'block' : 'none';
 
@@ -159,7 +195,7 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: { display: true },
         },
         scales: {
           y: {
@@ -176,6 +212,7 @@
     const hasData = activities.length > 0;
     listEmptyMsg.style.display = hasData ? 'none' : 'block';
     activityList.style.display = hasData ? 'block' : 'none';
+    listEmptyMsg.textContent = 'No activities yet. Log an activity above to get started.';
 
     activityList.innerHTML = activities.map(a => {
       const date = a.timecreated ? new Date(a.timecreated).toLocaleString() : '—';
@@ -198,6 +235,11 @@
         const li = btn.closest('.activity-item');
         const id = li?.dataset?.id;
         if (!id) return;
+        if (id.startsWith('guest-')) {
+          guestActivities = guestActivities.filter(a => String(a.activityid) !== id);
+          loadData();
+          return;
+        }
         try {
           await api('DELETE', `/activitylogs/${id}`);
           li.remove();
@@ -229,12 +271,6 @@
 
   activityForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const childid = childSelect?.value;
-    if (!childid) {
-      showFormMsg('Please select a child first.', 'error');
-      return;
-    }
-
     let activitytype = document.getElementById('activity-type')?.value?.trim();
     if (activitytype === 'Other') {
       activitytype = document.getElementById('activity-custom')?.value?.trim() || 'Other';
@@ -245,6 +281,27 @@
 
     if (!activitytype || !duration || duration < 1) {
       showFormMsg('Please enter activity type and duration.', 'error');
+      return;
+    }
+
+    const payload = {
+      activitytype,
+      duration,
+      steps: steps ? parseInt(steps, 10) : null,
+      caloriesburned: caloriesburned ? parseInt(caloriesburned, 10) : null,
+    };
+
+    if (!isLoggedIn) {
+      addGuestActivity(payload);
+      showFormMsg('Added for preview only. Log in to save records.', 'success');
+      activityForm.reset();
+      loadData();
+      return;
+    }
+
+    const childid = activeChildId;
+    if (!childid) {
+      showFormMsg('Please select a child first.', 'error');
       return;
     }
 
