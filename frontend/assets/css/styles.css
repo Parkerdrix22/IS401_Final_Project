@@ -636,6 +636,21 @@ h1 {
   border-color: var(--accent);
 }
 
+.auth-form select {
+  border: 1px solid #c5dfd0;
+  border-radius: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 1rem;
+  color: var(--text);
+  background: #fcfffd;
+  font-family: inherit;
+}
+
+.auth-form select:focus {
+  outline: 2px solid rgba(46, 154, 87, 0.38);
+  border-color: var(--accent);
+}
+
 .auth-btn {
   margin-top: 0.35rem;
   border: none;
@@ -689,6 +704,138 @@ h1 {
   .auth-card {
     padding: 1.35rem;
   }
+}
+
+/* Children section (register page) */
+.children-section {
+  display: none;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface-soft);
+}
+
+.children-section.visible {
+  display: block;
+}
+
+.children-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.children-section-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--brand-dark);
+}
+
+.children-section-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.83rem;
+  color: var(--muted);
+}
+
+.add-child-btn {
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  white-space: nowrap;
+}
+
+.add-child-btn:hover,
+.add-child-btn:focus-visible {
+  background: var(--accent);
+  color: #fff;
+}
+
+.child-card {
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.85rem 0.9rem;
+  background: #fff;
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.child-card:last-child {
+  margin-bottom: 0;
+}
+
+.child-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.child-card-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--brand-dark);
+}
+
+.child-remove-btn {
+  background: none;
+  border: none;
+  color: #bb2020;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.35rem;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.child-remove-btn:hover,
+.child-remove-btn:focus-visible {
+  background: rgba(187, 32, 32, 0.08);
+}
+
+.child-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.child-card label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.83rem;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.child-card .field-optional {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.child-card input {
+  border: 1px solid #c5dfd0;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: #fcfffd;
+  width: 100%;
+  font-family: inherit;
+}
+
+.child-card input:focus {
+  outline: 2px solid rgba(46, 154, 87, 0.38);
+  border-color: var(--accent);
 }
 
 /* Fitness page */
