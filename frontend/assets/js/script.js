@@ -43,8 +43,60 @@ async function request(method, path, body) {
 function renderHomeWelcome(user) {
   const welcomeEl = document.getElementById('home-welcome');
   if (!welcomeEl || !user) return;
-  welcomeEl.textContent = `Welcome, ${user.username}!`;
+  const displayName = user.firstname || user.username;
+  welcomeEl.textContent = `Welcome, ${displayName}!`;
   welcomeEl.style.display = 'block';
+}
+
+function renderFamilySnapshot(summary) {
+  const section = document.getElementById('family-snapshot');
+  const loginStreakEl = document.getElementById('login-streak-summary');
+  const listEl = document.getElementById('children-streak-list');
+  if (!section || !loginStreakEl || !listEl) return;
+
+  section.style.display = 'block';
+  loginStreakEl.textContent = `Login streak: ${summary.loginStreak.current} day(s) current, ${summary.loginStreak.longest} day(s) longest`;
+
+  if (!Array.isArray(summary.children) || summary.children.length === 0) {
+    listEl.innerHTML = '<p class="snapshot-subtitle">No child profiles yet. Add a child to begin tracking streaks.</p>';
+    return;
+  }
+
+  listEl.innerHTML = summary.children.map((child) => {
+    const name = `${child.firstname} ${child.lastname}`;
+    const nutrition = child.streaks?.nutrition ?? { current: 0, longest: 0 };
+    const fitness = child.streaks?.fitness ?? { current: 0, longest: 0 };
+    const healthy = child.streaks?.healthyHabits ?? { current: 0, longest: 0 };
+    return `
+      <article class="child-streak-card">
+        <h3>${name}</h3>
+        <p class="child-streak-meta">Age ${child.age ?? '-'}</p>
+        <div class="streak-grid">
+          <div class="streak-item">
+            <span class="streak-icon" aria-hidden="true">🔥</span>
+            <div>
+              <p class="streak-label">Nutrition</p>
+              <p class="streak-value">${nutrition.current} current / ${nutrition.longest} longest</p>
+            </div>
+          </div>
+          <div class="streak-item">
+            <span class="streak-icon" aria-hidden="true">💪</span>
+            <div>
+              <p class="streak-label">Fitness</p>
+              <p class="streak-value">${fitness.current} current / ${fitness.longest} longest</p>
+            </div>
+          </div>
+          <div class="streak-item">
+            <span class="streak-icon" aria-hidden="true">⭐</span>
+            <div>
+              <p class="streak-label">Healthy Habits</p>
+              <p class="streak-value">${healthy.current} current / ${healthy.longest} longest</p>
+            </div>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
 }
 
 function setLoggedOutNav() {
@@ -83,6 +135,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const user = await request('GET', '/auth/me');
     setLoggedInNav(user);
+    if (document.getElementById('family-snapshot')) {
+      const summary = await request('GET', '/streaks/summary');
+      renderFamilySnapshot(summary);
+    }
   } catch (_err) {
     setLoggedOutNav();
   }
