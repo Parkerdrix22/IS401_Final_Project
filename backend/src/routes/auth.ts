@@ -5,6 +5,70 @@ import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
+async function ensureUserLoginStreaksTable(): Promise<void> {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS userloginstreaks (
+      userid INT PRIMARY KEY REFERENCES users(userid) ON DELETE CASCADE,
+      currentstreak INT NOT NULL DEFAULT 0,
+      longeststreak INT NOT NULL DEFAULT 0,
+      lastlogindate DATE,
+      lastupdated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
+async function updateUserLoginStreak(userId: number): Promise<void> {
+  await ensureUserLoginStreaksTable();
+  const result = await pool.query(
+    'SELECT currentstreak, longeststreak, lastlogindate FROM userloginstreaks WHERE userid = $1',
+    [userId]
+  );
+
+  const today = new Date();
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  if (!result.rows[0]) {
+    await pool.query(
+      `INSERT INTO userloginstreaks (userid, currentstreak, longeststreak, lastlogindate, lastupdated)
+       VALUES ($1, 1, 1, CURRENT_DATE, NOW())`,
+      [userId]
+    );
+    return;
+  }
+
+  const row = result.rows[0];
+  const current = Number(row.currentstreak ?? 0);
+  const longest = Number(row.longeststreak ?? 0);
+  const lastDate = row.lastlogindate ? new Date(row.lastlogindate) : null;
+
+  if (lastDate) {
+    const normalizedLastDate = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+    const diffDays = Math.floor((todayDate.getTime() - normalizedLastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      await pool.query('UPDATE userloginstreaks SET lastupdated = NOW() WHERE userid = $1', [userId]);
+      return;
+    }
+
+    const nextCurrent = diffDays === 1 ? current + 1 : 1;
+    const nextLongest = Math.max(longest, nextCurrent);
+    await pool.query(
+      `UPDATE userloginstreaks
+       SET currentstreak = $1, longeststreak = $2, lastlogindate = CURRENT_DATE, lastupdated = NOW()
+       WHERE userid = $3`,
+      [nextCurrent, nextLongest, userId]
+    );
+    return;
+  }
+
+  await pool.query(
+    `UPDATE userloginstreaks
+     SET currentstreak = 1, longeststreak = GREATEST(longeststreak, 1), lastlogindate = CURRENT_DATE, lastupdated = NOW()
+     WHERE userid = $1`,
+    [userId]
+  );
+}
+
 // NOTE: The users.passwordhash column is VARCHAR(50) in the schema.
 // bcrypt hashes are 60 characters and will be truncated, which breaks compare().
 // The schema column should be VARCHAR(60) or larger for bcrypt to work correctly.
@@ -93,6 +157,7 @@ router.post('/login', async (req, res) => {
       return;
     }
     await pool.query('UPDATE users SET lastlogin = NOW() WHERE userid = $1', [user.userid]);
+    await updateUserLoginStreak(Number(user.userid));
     req.session.userId = user.userid;
     res.json({
       userid: user.userid,
