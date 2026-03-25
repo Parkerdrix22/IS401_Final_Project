@@ -2,6 +2,7 @@ const GOALS_API_BASE = window.location.port === '8080' ? 'http://localhost:3000'
 
 const goalsState = {
   summary: null,
+  activeChildId: null,
 };
 
 function currentWeekRange() {
@@ -88,6 +89,15 @@ function renderGoalItem(goal, childId) {
   `;
 }
 
+function resolveActiveChildId(children) {
+  if (!children.length) return null;
+  const active = Number(goalsState.activeChildId);
+  if (children.some((child) => Number(child.childid) === active)) {
+    return active;
+  }
+  return Number(children[0].childid);
+}
+
 function renderChildCard(child) {
   const screenHours = (Number(child.weekly.screentime_minutes || 0) / 60).toFixed(1);
   return `
@@ -153,14 +163,118 @@ function renderChildCard(child) {
   `;
 }
 
+function renderChildTab(child, activeChildId) {
+  const isActive = Number(child.childid) === Number(activeChildId);
+  return `
+    <button
+      type="button"
+      class="goals-child-tab${isActive ? ' active' : ''}"
+      role="tab"
+      id="goals-tab-${child.childid}"
+      aria-controls="goals-panel-${child.childid}"
+      aria-selected="${isActive ? 'true' : 'false'}"
+      tabindex="${isActive ? '0' : '-1'}"
+      data-child-tab="${child.childid}"
+    >
+      <span class="goals-child-tab-name">${child.firstname} ${child.lastname}</span>
+      <span class="goals-child-tab-age">Age ${child.age ?? '-'}</span>
+    </button>
+  `;
+}
+
+function renderChildPanels(children, activeChildId) {
+  return children.map((child) => {
+    const isActive = Number(child.childid) === Number(activeChildId);
+    return `
+      <div
+        class="goals-child-panel${isActive ? ' active' : ''}"
+        role="tabpanel"
+        id="goals-panel-${child.childid}"
+        aria-labelledby="goals-tab-${child.childid}"
+        data-child-panel="${child.childid}"
+        ${isActive ? '' : 'hidden'}
+      >
+        ${renderChildCard(child)}
+      </div>
+    `;
+  }).join('');
+}
+
+function activateChildTab(childId) {
+  goalsState.activeChildId = Number(childId);
+
+  document.querySelectorAll('[data-child-tab]').forEach((tab) => {
+    const tabChildId = Number(tab.getAttribute('data-child-tab'));
+    const isActive = tabChildId === goalsState.activeChildId;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    tab.tabIndex = isActive ? 0 : -1;
+  });
+
+  document.querySelectorAll('[data-child-panel]').forEach((panel) => {
+    const panelChildId = Number(panel.getAttribute('data-child-panel'));
+    const isActive = panelChildId === goalsState.activeChildId;
+    panel.classList.toggle('active', isActive);
+    panel.hidden = !isActive;
+  });
+}
+
+function bindChildTabs() {
+  const tabs = Array.from(document.querySelectorAll('[data-child-tab]'));
+  if (!tabs.length) return;
+
+  const focusTabByIndex = (index) => {
+    const normalized = (index + tabs.length) % tabs.length;
+    const target = tabs[normalized];
+    target.focus();
+    activateChildTab(Number(target.getAttribute('data-child-tab')));
+  };
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => {
+      activateChildTab(Number(tab.getAttribute('data-child-tab')));
+    });
+
+    tab.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        focusTabByIndex(index + 1);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        focusTabByIndex(index - 1);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        focusTabByIndex(0);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        focusTabByIndex(tabs.length - 1);
+      }
+    });
+  });
+}
+
 function renderGoalsPage(summary) {
   const root = document.getElementById('goals-children-list');
   if (!root) return;
-  if (!summary.children || summary.children.length === 0) {
+  const children = summary.children || [];
+  if (children.length === 0) {
     root.innerHTML = '<p class="goals-empty">No children found for this account.</p>';
     return;
   }
-  root.innerHTML = summary.children.map((child) => renderChildCard(child)).join('');
+
+  const activeChildId = resolveActiveChildId(children);
+  goalsState.activeChildId = activeChildId;
+
+  root.innerHTML = `
+    <div class="goals-children-tabs" role="tablist" aria-label="Children goals tabs">
+      ${children.map((child) => renderChildTab(child, activeChildId)).join('')}
+    </div>
+    <div class="goals-children-panels">
+      ${renderChildPanels(children, activeChildId)}
+    </div>
+  `;
+
+  bindChildTabs();
 }
 
 function bindGoalForms() {
