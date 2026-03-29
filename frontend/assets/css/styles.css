@@ -1808,3 +1808,314 @@ h1 {
 .children-empty {
   color: var(--muted);
 }
+
+/* Screen Time page */
+.screentime-layout {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.screentime-top-row {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.screentime-child-card,
+.screentime-date-card,
+.screentime-filter-card,
+.screentime-form-card,
+.screentime-list-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.screentime-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.screentime-child-selector {
+  max-width: 100%;
+}
+
+.screentime-current-date {
+  margin: 0.45rem 0 0;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.screentime-date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.screentime-date-heading {
+  margin: 0;
+  color: var(--brand-dark);
+}
+
+.screentime-date-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid #c5dfd0;
+  background: #fcfffd;
+  color: var(--brand-dark);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.screentime-date-btn:hover,
+.screentime-date-btn:focus-visible {
+  background: #eef8f2;
+  border-color: var(--accent);
+}
+
+.screentime-select,
+.screentime-input {
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid #c5dfd0;
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 1rem;
+  color: var(--text);
+  background: #fcfffd;
+  font-family: inherit;
+}
+
+.screentime-select:focus,
+.screentime-input:focus {
+  outline: 2px solid rgba(46, 154, 87, 0.38);
+  border-color: var(--accent);
+}
+
+.screentime-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.screentime-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 1.5rem;
+}
+
+.screentime-chart-card h2,
+.screentime-filter-card h2,
+.screentime-form-card h2,
+.screentime-list-card h2 {
+  font-size: 1.35rem;
+  color: var(--brand-dark);
+  margin: 0 0 0.35rem 0;
+}
+
+.screentime-chart-desc {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+}
+
+.screentime-empty-msg {
+  color: var(--muted);
+  font-style: italic;
+  margin: 0.5rem 0 0;
+}
+
+.screentime-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem;
+  align-items: end;
+}
+
+.filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filter-row label {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.screentime-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.form-row label {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.form-row-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.form-row-optional label {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.screentime-btn {
+  margin-top: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.65rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.screentime-btn:hover,
+.screentime-btn:focus-visible {
+  background: var(--accent-dark);
+}
+
+.screentime-msg {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+}
+
+.screentime-msg.success {
+  color: #15703a;
+}
+
+.screentime-msg.error {
+  color: #bb2020;
+}
+
+.screentime-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.screentime-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  margin-bottom: 0.65rem;
+  background: var(--surface-soft);
+}
+
+.screentime-item:last-child {
+  margin-bottom: 0;
+}
+
+.screentime-item-main {
+  flex: 1;
+  min-width: 200px;
+}
+
+.screentime-item-category {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.screentime-item-duration {
+  margin: 0.2rem 0 0;
+  color: var(--accent-dark);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.screentime-item-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.screentime-item-notes {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-top: 0.3rem;
+  font-style: italic;
+  padding: 0.35rem 0.6rem;
+  background: rgba(46, 154, 87, 0.08);
+  border-radius: 0.4rem;
+}
+
+.screentime-delete {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+
+.screentime-delete:hover,
+.screentime-delete:focus-visible {
+  color: #bb2020;
+  background: rgba(187, 32, 32, 0.1);
+}
+
+@media (max-width: 760px) {
+  .screentime-top-row {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .screentime-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .screentime-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row-group {
+    grid-template-columns: 1fr;
+  }
+
+  .screentime-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .screentime-delete {
+    align-self: flex-end;
+    position: relative;
+    margin-top: -2.5rem;
+  }
+}

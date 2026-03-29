@@ -32,18 +32,143 @@
   <header class="hero">
     <div class="container hero-content">
       <h1>Screen Time</h1>
-      <p>Monitor and manage screen time usage.</p>
+      <p>Monitor and manage device usage with daily tracking and visual insights.</p>
     </div>
   </header>
 
   <main>
     <section class="section">
       <div class="container">
-        <!-- Screen Time view content goes here -->
+        <div class="screentime-layout">
+          <!-- Child selector and date navigation -->
+          <div class="screentime-top-row">
+            <div class="screentime-child-card">
+              <div class="child-selector screentime-child-selector">
+                <label for="screentime-child-select">Select child</label>
+                <select id="screentime-child-select" class="screentime-input">
+                  <option value="">— Choose a child —</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="screentime-date-card">
+              <div class="screentime-date-nav">
+                <button id="screentime-prev-day" class="screentime-date-btn" type="button" aria-label="Go to previous day">&#8592;</button>
+                <div>
+                  <h2 id="screentime-date-heading">Tuesday</h2>
+                  <p id="screentime-current-date" class="screentime-current-date"></p>
+                </div>
+                <button id="screentime-next-day" class="screentime-date-btn" type="button" aria-label="Go to next day">&#8594;</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Section -->
+          <div class="screentime-charts-grid">
+            <!-- Weekly screen time chart -->
+            <div class="screentime-chart-card">
+              <h2>Screen Time This Week</h2>
+              <p class="screentime-chart-desc">Minutes per day (Sunday through Saturday)</p>
+              <div class="chart-wrapper">
+                <canvas id="weekly-screentime-chart" aria-label="Screen time per day this week"></canvas>
+              </div>
+              <p id="weekly-chart-empty-msg" class="screentime-empty-msg" style="display: none;">No screen time data yet. Log entries below to see your history.</p>
+            </div>
+
+            <!-- Category breakdown chart -->
+            <div class="screentime-chart-card">
+              <h2>Time by Category</h2>
+              <p class="screentime-chart-desc">Breakdown for selected day</p>
+              <div class="chart-wrapper">
+                <canvas id="category-chart" aria-label="Screen time breakdown by category"></canvas>
+              </div>
+              <p id="category-chart-empty-msg" class="screentime-empty-msg" style="display: none;">No data for this day. Log entries below to see the breakdown.</p>
+            </div>
+          </div>
+
+          <!-- Filter section -->
+          <div class="screentime-filter-card">
+            <h2>View History</h2>
+            <div class="screentime-filters">
+              <div class="filter-row">
+                <label for="screentime-filter-startdate">From</label>
+                <input type="date" id="screentime-filter-startdate" class="screentime-input">
+              </div>
+              <div class="filter-row">
+                <label for="screentime-filter-enddate">To</label>
+                <input type="date" id="screentime-filter-enddate" class="screentime-input">
+              </div>
+              <div class="filter-row">
+                <label for="screentime-filter-category">Category</label>
+                <select id="screentime-filter-category" class="screentime-input">
+                  <option value="">— All categories —</option>
+                  <option value="Gaming">Gaming</option>
+                  <option value="Social Media">Social Media</option>
+                  <option value="Schoolwork">Schoolwork</option>
+                  <option value="TV">TV</option>
+                  <option value="Video Streaming">Video Streaming</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <button type="button" id="screentime-apply-filters" class="screentime-btn">Apply Filters</button>
+            </div>
+          </div>
+
+          <!-- Log screen time form -->
+          <div class="screentime-form-card">
+            <h2 style="text-align: center;">Log Screen Time</h2>
+
+            <form id="screentime-form" class="screentime-form">
+              <div class="form-row">
+                <label for="screentime-category">Category</label>
+                <select id="screentime-category" class="screentime-input" required>
+                  <option value="">— Select —</option>
+                  <option value="Gaming">Gaming</option>
+                  <option value="Social Media">Social Media</option>
+                  <option value="Schoolwork">Schoolwork</option>
+                  <option value="TV">TV</option>
+                  <option value="Video Streaming">Video Streaming</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-row-group">
+                <div class="form-row">
+                  <label for="screentime-duration-value">Duration</label>
+                  <input type="number" id="screentime-duration-value" class="screentime-input" min="1" max="1440" placeholder="e.g. 30" required>
+                </div>
+                <div class="form-row">
+                  <label for="screentime-duration-unit">Unit</label>
+                  <select id="screentime-duration-unit" class="screentime-input">
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row form-row-optional">
+                <label for="screentime-notes">Notes (optional)</label>
+                <textarea id="screentime-notes" class="screentime-input screentime-textarea" maxlength="200" placeholder="e.g. YouTube videos, online lessons, etc."></textarea>
+              </div>
+
+              <button type="submit" class="screentime-btn">Add Entry</button>
+            </form>
+            <p id="screentime-form-msg" class="screentime-msg" aria-live="polite"></p>
+          </div>
+
+          <!-- Screen time entry list -->
+          <div class="screentime-list-card">
+            <h2>Screen Time History</h2>
+            <p id="list-empty-msg" class="screentime-empty-msg" style="display: none;">No entries yet. Log screen time above to get started.</p>
+            <ul id="screentime-list" class="screentime-list"></ul>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="assets/js/script.js"></script>
+  <script src="assets/js/screentime.js"></script>
 </body>
 </html>
