@@ -349,6 +349,8 @@
     try {
       await api('POST', '/screentimelog', {
         childid: activeChildId,
+        date: toLocalDateKey(selectedDate),
+        devicetype: 'Unknown',
         activitytype: category,
         duration: durationValue,
         durationunit: durationUnit,
@@ -431,6 +433,7 @@
       const entries = await api('GET', path);
       allEntries = Array.isArray(entries) ? entries : [];
       renderWeeklyChart();
+      renderCategoryChart();
       renderCurrentDayEntries();
     } catch (err) {
       console.error('Failed to apply filters:', err);
