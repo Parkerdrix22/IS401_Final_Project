@@ -678,6 +678,15 @@
 
   // Initialize
   renderSelectedDay();
+  
+  // Ensure both child selectors are enabled and ready
+  if (childSelect) {
+    childSelect.disabled = false;
+  }
+  if (viewChildSelect) {
+    viewChildSelect.disabled = false;
+  }
+  
   loadChildren();
   // Set default date to today and time to current time
   if (screentimeDateInput) {
