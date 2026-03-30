@@ -93,8 +93,16 @@
                 <input type="text" id="activity-custom" class="fitness-input" maxlength="50" placeholder="e.g. Soccer, Gymnastics">
               </div>
               <div class="form-row">
-                <label for="activity-duration">Duration (minutes)</label>
-                <input type="number" id="activity-duration" class="fitness-input" min="1" max="600" placeholder="e.g. 30" required>
+                <label for="activity-start">Start time</label>
+                <input type="time" id="activity-start" class="fitness-input" required>
+              </div>
+              <div class="form-row">
+                <label for="activity-end">End time</label>
+                <input type="time" id="activity-end" class="fitness-input" required>
+              </div>
+              <div class="form-row">
+                <label for="activity-notes">Notes (optional)</label>
+                <textarea id="activity-notes" class="fitness-input" rows="2" maxlength="500" placeholder="e.g. Ran at the park"></textarea>
               </div>
               <button type="submit" class="fitness-btn">Add Activity</button>
             </form>

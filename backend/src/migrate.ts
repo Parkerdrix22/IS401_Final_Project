@@ -7,6 +7,8 @@
  *  1. Widen passwordhash VARCHAR(50) → VARCHAR(60) for bcrypt hashes.
  *  2. Add UNIQUE constraint on users.username (prevents duplicate accounts).
  *  3. Add UNIQUE constraint on users.email   (prevents duplicate accounts).
+ *  4. Add starttime, endtime TIME columns to activitylogs.
+ *  5. Add notes TEXT column to activitylogs.
  */
 import { pool } from './db';
 
@@ -62,6 +64,42 @@ async function migrate() {
       console.log('✓ UNIQUE constraint added on users.email');
     } else {
       console.log('  users.email UNIQUE already exists — skipped');
+    }
+
+    // 4. Add starttime column to activitylogs
+    const starttimeCheck = await client.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'activitylogs' AND column_name = 'starttime'
+    `);
+    if (starttimeCheck.rowCount === 0) {
+      await client.query(`ALTER TABLE activitylogs ADD COLUMN starttime TIME`);
+      console.log('✓ starttime column added to activitylogs');
+    } else {
+      console.log('  activitylogs.starttime already exists — skipped');
+    }
+
+    // 5. Add endtime column to activitylogs
+    const endtimeCheck = await client.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'activitylogs' AND column_name = 'endtime'
+    `);
+    if (endtimeCheck.rowCount === 0) {
+      await client.query(`ALTER TABLE activitylogs ADD COLUMN endtime TIME`);
+      console.log('✓ endtime column added to activitylogs');
+    } else {
+      console.log('  activitylogs.endtime already exists — skipped');
+    }
+
+    // 6. Add notes column to activitylogs
+    const notesCheck = await client.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'activitylogs' AND column_name = 'notes'
+    `);
+    if (notesCheck.rowCount === 0) {
+      await client.query(`ALTER TABLE activitylogs ADD COLUMN notes TEXT`);
+      console.log('✓ notes column added to activitylogs');
+    } else {
+      console.log('  activitylogs.notes already exists — skipped');
     }
 
     await client.query('COMMIT');

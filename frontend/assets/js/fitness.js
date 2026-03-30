@@ -199,14 +199,19 @@
     activityList.style.display = hasData ? 'block' : 'none';
 
     activityList.innerHTML = activities.map((a) => {
-      const date = a.timecreated ? new Date(a.timecreated).toLocaleString() : '—';
+      const date = a.timecreated ? new Date(a.timecreated).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+      const timeRange = (a.starttime && a.endtime)
+        ? `${formatTime(a.starttime.slice(0, 5))} – ${formatTime(a.endtime.slice(0, 5))}`
+        : `${a.duration || 0} min`;
+      const notesHtml = a.notes ? `<div class="activity-item-notes">${escapeHtml(a.notes)}</div>` : '';
       return `
         <li class="activity-item" data-id="${a.activityid}">
           <div class="activity-item-main">
             <span class="activity-type">${escapeHtml(a.activitytype || '—')}</span>
-            <span class="activity-duration">${a.duration || 0} min</span>
+            <span class="activity-duration">${timeRange}</span>
           </div>
-          <div class="activity-item-meta">${escapeHtml(date)}</div>
+          <div class="activity-item-meta">${escapeHtml(date)} · ${a.duration || 0} min</div>
+          ${notesHtml}
           <button type="button" class="activity-delete" aria-label="Delete activity">×</button>
         </li>
       `;
@@ -234,6 +239,20 @@
     renderList(activities);
   }
 
+  function timeDiffMinutes(start, end) {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm);
+  }
+
+  function formatTime(timeStr) {
+    if (!timeStr) return null;
+    const [h, m] = timeStr.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  }
+
   activityForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const childid = activeChildId;
@@ -246,10 +265,21 @@
     if (activitytype === 'Other') {
       activitytype = document.getElementById('activity-custom')?.value?.trim() || 'Other';
     }
-    const duration = parseInt(document.getElementById('activity-duration')?.value, 10);
+    const starttime = document.getElementById('activity-start')?.value;
+    const endtime = document.getElementById('activity-end')?.value;
+    const notes = document.getElementById('activity-notes')?.value?.trim() || null;
 
-    if (!activitytype || !duration || duration < 1) {
-      showFormMsg('Please enter activity type and duration.', 'error');
+    if (!activitytype) {
+      showFormMsg('Please select an activity type.', 'error');
+      return;
+    }
+    if (!starttime || !endtime) {
+      showFormMsg('Please enter a start and end time.', 'error');
+      return;
+    }
+    const duration = timeDiffMinutes(starttime, endtime);
+    if (duration < 1) {
+      showFormMsg('End time must be after start time.', 'error');
       return;
     }
 
@@ -259,7 +289,10 @@
         childid: Number(childid),
         activitytype,
         duration,
-        timecreated: `${toLocalDateKey(selectedDate)}T12:00:00`,
+        starttime,
+        endtime,
+        notes,
+        timecreated: `${toLocalDateKey(selectedDate)}T${starttime}:00`,
       });
       showFormMsg('Activity added!', 'success');
       activityForm.reset();
