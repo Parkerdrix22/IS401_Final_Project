@@ -17,6 +17,7 @@
   const filterStartDateInput = document.getElementById('screentime-filter-startdate');
   const filterEndDateInput = document.getElementById('screentime-filter-enddate');
   const filterCategoryInput = document.getElementById('screentime-filter-category');
+  const screentimeDateInput = document.getElementById('screentime-date');
 
   // State
   let selectedDate = new Date();
@@ -340,8 +341,9 @@
     const durationValue = Number(document.getElementById('screentime-duration-value').value);
     const durationUnit = document.getElementById('screentime-duration-unit').value;
     const notes = document.getElementById('screentime-notes').value.trim();
+    const entryDate = screentimeDateInput.value;
 
-    if (!category || !durationValue) {
+    if (!category || !durationValue || !entryDate) {
       showFormMsg('Please fill in all required fields.', 'error');
       return;
     }
@@ -349,7 +351,7 @@
     try {
       await api('POST', '/screentimelog', {
         childid: activeChildId,
-        date: toLocalDateKey(selectedDate),
+        date: entryDate,
         devicetype: 'Unknown',
         activitytype: category,
         duration: durationValue,
@@ -461,4 +463,8 @@
   // Initialize
   renderSelectedDay();
   loadChildren();
+  // Set default date to today
+  if (screentimeDateInput) {
+    screentimeDateInput.value = toLocalDateKey(new Date());
+  }
 })();
