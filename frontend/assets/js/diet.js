@@ -15,6 +15,8 @@ function () {
 
   let selectedDate = new Date();
   let selectedChildId = '';
+  let currentDayLog = null;
+  let latestLoadToken = '';
 
   function formatDateKey(date) {
     const year = date.getFullYear();
@@ -94,10 +96,8 @@ function () {
     return {};
   }
 
-  function getDayLog(store, childId, dateKey) {
-    const entry = getChildLogs(store, childId)[dateKey];
+  function buildDayLogFromData(entry, dateKey) {
     if (!entry || typeof entry !== 'object') return makeDefaultDayLog(dateKey);
-
     const fallback = makeDefaultDayLog(dateKey);
     return {
       date: dateKey,
@@ -132,18 +132,25 @@ function () {
     };
   }
 
-  function setDayLog(store, childId, dateKey, dayLog) {
+  function readLocalDayLog(childId, dateKey) {
+    const store = loadStore();
+    const entry = getChildLogs(store, childId)[dateKey];
+    return buildDayLogFromData(entry, dateKey);
+  }
+
+  function writeLocalDayLog(childId, dateKey, dayLog) {
     if (!childId) return;
+    const store = loadStore();
     if (!store[childId] || typeof store[childId] !== 'object') {
       store[childId] = {};
     }
-
     store[childId][dateKey] = {
       date: dateKey,
       meals: dayLog.meals,
       snacks: dayLog.snacks,
       hydration: dayLog.hydration,
     };
+    saveStore(store);
   }
 
   function getDerived(dayLog) {
@@ -259,10 +266,8 @@ function () {
 
   function saveSelectedDayFromDom() {
     if (!selectedChildId) return;
-
-    const store = loadStore();
     const selectedKey = getSelectedDateKey();
-    const dayLog = getDayLog(store, selectedChildId, selectedKey);
+    const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
 
     dayLog.meals.breakfast.time = cleanText(document.getElementById('breakfast-time')?.value, 5);
     dayLog.meals.breakfast.food = cleanText(document.getElementById('breakfast-food')?.value, 120);
@@ -275,34 +280,30 @@ function () {
     dayLog.hydration.milkOz = clampNumber(document.getElementById('milk-oz')?.value, 0, 300);
 
     dayLog.snacks = readSnacksFromDom();
-
-    setDayLog(store, selectedChildId, selectedKey, dayLog);
-    saveStore(store);
+    currentDayLog = dayLog;
+    writeLocalDayLog(selectedChildId, selectedKey, dayLog);
     renderHydration(dayLog);
+    saveDayLogToServer(selectedChildId, selectedKey, dayLog).catch(() => {});
   }
 
   function addSnackRow() {
     if (!selectedChildId) return;
-
-    const store = loadStore();
     const selectedKey = getSelectedDateKey();
-    const dayLog = getDayLog(store, selectedChildId, selectedKey);
+    const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
     dayLog.snacks.push({ id: makeSnackId(), time: '', food: '' });
-    setDayLog(store, selectedChildId, selectedKey, dayLog);
-    saveStore(store);
+    currentDayLog = dayLog;
+    writeLocalDayLog(selectedChildId, selectedKey, dayLog);
     renderSnacks(dayLog);
     saveSelectedDayFromDom();
   }
 
   function removeSnackRow(id) {
     if (!selectedChildId) return;
-
-    const store = loadStore();
     const selectedKey = getSelectedDateKey();
-    const dayLog = getDayLog(store, selectedChildId, selectedKey);
+    const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
     dayLog.snacks = dayLog.snacks.filter((snack) => snack.id !== id);
-    setDayLog(store, selectedChildId, selectedKey, dayLog);
-    saveStore(store);
+    currentDayLog = dayLog;
+    writeLocalDayLog(selectedChildId, selectedKey, dayLog);
     renderSnacks(dayLog);
     saveSelectedDayFromDom();
   }
@@ -335,6 +336,7 @@ function () {
 
   function clearSelectedDayUi() {
     const empty = makeDefaultDayLog(getSelectedDateKey());
+    currentDayLog = empty;
     renderMeals(empty);
     renderHydration(empty);
     renderSnacks(empty);
@@ -342,6 +344,7 @@ function () {
 
   function loadSelectedDayIntoUi() {
     renderCurrentDate();
+    const selectedKey = getSelectedDateKey();
 
     if (!selectedChildId) {
       setFormDisabled(true);
@@ -350,14 +353,26 @@ function () {
     }
 
     setFormDisabled(false);
-    const store = loadStore();
-    const selectedKey = getSelectedDateKey();
-    const dayLog = getDayLog(store, selectedChildId, selectedKey);
-    setDayLog(store, selectedChildId, selectedKey, dayLog);
-    saveStore(store);
-    renderMeals(dayLog);
-    renderHydration(dayLog);
-    renderSnacks(dayLog);
+    const token = `${selectedChildId}:${selectedKey}:${Date.now()}`;
+    latestLoadToken = token;
+
+    fetchDayLogFromServer(selectedChildId, selectedKey)
+      .then((dayLog) => {
+        if (latestLoadToken !== token) return;
+        currentDayLog = dayLog;
+        writeLocalDayLog(selectedChildId, selectedKey, dayLog);
+        renderMeals(dayLog);
+        renderHydration(dayLog);
+        renderSnacks(dayLog);
+      })
+      .catch(() => {
+        if (latestLoadToken !== token) return;
+        const fallback = readLocalDayLog(selectedChildId, selectedKey);
+        currentDayLog = fallback;
+        renderMeals(fallback);
+        renderHydration(fallback);
+        renderSnacks(fallback);
+      });
   }
 
   function bindListeners() {
@@ -445,12 +460,12 @@ function () {
         const reader = new FileReader();
         reader.onload = () => {
           if (typeof reader.result !== 'string') return;
-          const store = loadStore();
           const selectedKey = getSelectedDateKey();
-          const dayLog = getDayLog(store, selectedChildId, selectedKey);
+          const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
           dayLog.meals[meal].imageData = reader.result;
-          setDayLog(store, selectedChildId, selectedKey, dayLog);
-          saveStore(store);
+          currentDayLog = dayLog;
+          writeLocalDayLog(selectedChildId, selectedKey, dayLog);
+          saveDayLogToServer(selectedChildId, selectedKey, dayLog).catch(() => {});
           renderMeals(dayLog);
           inputEl.value = '';
         };
@@ -459,22 +474,40 @@ function () {
     });
   }
 
-  async function apiGet(path) {
+  async function apiRequest(method, path, body) {
     const res = await fetch(`${API_BASE}${path}`, {
-      method: 'GET',
+      method,
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;
   }
 
+  async function fetchDayLogFromServer(childId, dateKey) {
+    const payload = await apiRequest('GET', `/dietlogs/day?childid=${encodeURIComponent(childId)}&date=${encodeURIComponent(dateKey)}`);
+    const serverData = payload?.data;
+    if (serverData && typeof serverData === 'object') {
+      return buildDayLogFromData(serverData, dateKey);
+    }
+    return readLocalDayLog(childId, dateKey);
+  }
+
+  async function saveDayLogToServer(childId, dateKey, dayLog) {
+    await apiRequest('PUT', '/dietlogs/day', {
+      childid: Number(childId),
+      date: dateKey,
+      data: dayLog,
+    });
+  }
+
   async function loadChildren() {
     if (!childSelectEl) return;
 
     try {
-      const children = await apiGet('/children');
+      const children = await apiRequest('GET', '/children');
       childSelectEl.innerHTML = '<option value="">-- Choose a child --</option>' +
         children.map((child) => `<option value="${child.childid}">${child.firstname} ${child.lastname}</option>`).join('');
 
