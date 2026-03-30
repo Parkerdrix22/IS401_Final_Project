@@ -43,9 +43,9 @@ function () {
     return {
       date: dateKey,
       meals: {
-        breakfast: { time: '', food: '', imageData: '' },
-        lunch: { time: '', food: '', imageData: '' },
-        dinner: { time: '', food: '', imageData: '' },
+        breakfast: { time: '', food: '' },
+        lunch: { time: '', food: '' },
+        dinner: { time: '', food: '' },
       },
       snacks: [],
       hydration: {
@@ -105,17 +105,14 @@ function () {
         breakfast: {
           time: cleanText(entry?.meals?.breakfast?.time, 5),
           food: cleanText(entry?.meals?.breakfast?.food, 120),
-          imageData: normalizeImageData(entry?.meals?.breakfast?.imageData),
         },
         lunch: {
           time: cleanText(entry?.meals?.lunch?.time, 5),
           food: cleanText(entry?.meals?.lunch?.food, 120),
-          imageData: normalizeImageData(entry?.meals?.lunch?.imageData),
         },
         dinner: {
           time: cleanText(entry?.meals?.dinner?.time, 5),
           food: cleanText(entry?.meals?.dinner?.food, 120),
-          imageData: normalizeImageData(entry?.meals?.dinner?.imageData),
         },
       },
       snacks: Array.isArray(entry.snacks)
@@ -160,14 +157,6 @@ function () {
     return { hydrationTotalOz };
   }
 
-  function normalizeImageData(value) {
-    if (typeof value !== 'string') return '';
-    const trimmed = value.trim();
-    if (trimmed.startsWith('data:image/')) return trimmed;
-    if (trimmed.startsWith('/images/')) return trimmed;
-    return '';
-  }
-
   function renderCurrentDate() {
     if (!dateEl) return;
     dateEl.textContent = selectedDate.toLocaleDateString(undefined, {
@@ -195,25 +184,6 @@ function () {
     setInputValue('lunch-food', dayLog.meals.lunch.food);
     setInputValue('dinner-time', dayLog.meals.dinner.time);
     setInputValue('dinner-food', dayLog.meals.dinner.food);
-    renderMealImages(dayLog);
-  }
-
-  function getMealSlotEl(meal) {
-    return document.querySelector(`.diet-meal-card[data-meal="${meal}"] .meal-image-slot`);
-  }
-
-  function renderMealImages(dayLog) {
-    ['breakfast', 'lunch', 'dinner'].forEach((meal) => {
-      const slot = getMealSlotEl(meal);
-      if (!slot) return;
-      const imageData = normalizeImageData(dayLog?.meals?.[meal]?.imageData);
-      if (imageData) {
-        const src = imageData.startsWith('/images/') ? `${API_BASE}${imageData}` : imageData;
-        slot.innerHTML = `<img class="meal-image-preview" src="${src}" alt="${meal} meal image">`;
-      } else {
-        slot.textContent = `Add ${meal} image`;
-      }
-    });
   }
 
   function renderHydration(dayLog) {
@@ -326,16 +296,6 @@ function () {
       if (el) el.disabled = disabled;
     });
 
-    ['breakfast', 'lunch', 'dinner'].forEach((meal) => {
-      const input = document.getElementById(`${meal}-image-input`);
-      if (input) input.disabled = disabled;
-      const slot = getMealSlotEl(meal);
-      if (!slot) return;
-      slot.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-      slot.tabIndex = 0;
-      slot.classList.toggle('is-disabled', disabled);
-    });
-
     if (addSnackBtn) addSnackBtn.disabled = disabled;
   }
 
@@ -438,54 +398,6 @@ function () {
       loadSelectedDayIntoUi();
     });
 
-    ['breakfast', 'lunch', 'dinner'].forEach((meal) => {
-      const inputEl = document.getElementById(`${meal}-image-input`);
-      const slotEl = getMealSlotEl(meal);
-      if (!inputEl || !slotEl) return;
-
-      const openPicker = () => {
-        if (!selectedChildId || inputEl.disabled) {
-          window.alert('Please select a child first to add meal images.');
-          return;
-        }
-        inputEl.click();
-      };
-
-      slotEl.addEventListener('click', openPicker);
-      slotEl.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openPicker();
-        }
-      });
-
-      inputEl.addEventListener('change', () => {
-        const file = inputEl.files && inputEl.files[0];
-        if (!file || !selectedChildId || !file.type.startsWith('image/')) return;
-        showSaveStatus('Uploading image...', '');
-        const formData = new FormData();
-        formData.append('image', file);
-        fetch(`${API_BASE}/upload/meal-image`, {
-          method: 'POST',
-          credentials: 'include',
-          body: formData,
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (!data.path) throw new Error(data.error || 'Upload failed');
-            const selectedKey = getSelectedDateKey();
-            const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
-            dayLog.meals[meal].imageData = data.path;
-            currentDayLog = dayLog;
-            writeLocalDayLog(selectedChildId, selectedKey, dayLog);
-            renderMeals(dayLog);
-            inputEl.value = '';
-            return saveDayLogToServer(selectedChildId, selectedKey, dayLog);
-          })
-          .then(() => showSaveStatus('Saved', 'success'))
-          .catch((err) => showSaveStatus('Upload failed: ' + (err.message || 'unknown error'), 'error'));
-      });
-    });
   }
 
   async function apiRequest(method, path, body) {
