@@ -200,15 +200,13 @@
 
     activityList.innerHTML = activities.map((a) => {
       const date = a.timecreated ? new Date(a.timecreated).toLocaleString() : '—';
-      const steps = a.steps != null ? ` • ${a.steps} steps` : '';
-      const cal = a.caloriesburned != null ? ` • ${a.caloriesburned} cal` : '';
       return `
         <li class="activity-item" data-id="${a.activityid}">
           <div class="activity-item-main">
             <span class="activity-type">${escapeHtml(a.activitytype || '—')}</span>
             <span class="activity-duration">${a.duration || 0} min</span>
           </div>
-          <div class="activity-item-meta">${escapeHtml(date)}${steps}${cal}</div>
+          <div class="activity-item-meta">${escapeHtml(date)}</div>
           <button type="button" class="activity-delete" aria-label="Delete activity">×</button>
         </li>
       `;
@@ -249,8 +247,6 @@
       activitytype = document.getElementById('activity-custom')?.value?.trim() || 'Other';
     }
     const duration = parseInt(document.getElementById('activity-duration')?.value, 10);
-    const steps = document.getElementById('activity-steps')?.value;
-    const caloriesburned = document.getElementById('activity-calories')?.value;
 
     if (!activitytype || !duration || duration < 1) {
       showFormMsg('Please enter activity type and duration.', 'error');
@@ -263,8 +259,6 @@
         childid: Number(childid),
         activitytype,
         duration,
-        steps: steps ? parseInt(steps, 10) : null,
-        caloriesburned: caloriesburned ? parseInt(caloriesburned, 10) : null,
         timecreated: `${toLocalDateKey(selectedDate)}T12:00:00`,
       });
       showFormMsg('Activity added!', 'success');
