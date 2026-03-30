@@ -1,6 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import * as path from 'path';
 
 import authRoutes          from './routes/auth';
 import usersRoutes         from './routes/users';
@@ -28,6 +29,8 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24,
   },
 }));
+
+app.use(express.static(path.resolve(__dirname, '../../frontend')));
 
 app.use('/auth',          authRoutes);
 app.use('/users',         usersRoutes);
