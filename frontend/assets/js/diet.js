@@ -1,6 +1,4 @@
-(
-function () {
-  const STORAGE_KEY = 'dietLogs:v1';
+(function () {
   const API_BASE = window.location.port === '8080' ? 'http://localhost:3000' : window.location.origin;
   const CHILD_STORAGE_KEY = 'diet-childid';
 
@@ -48,10 +46,7 @@ function () {
         dinner: { time: '', food: '' },
       },
       snacks: [],
-      hydration: {
-        waterOz: 0,
-        milkOz: 0,
-      },
+      hydration: { waterOz: 0, milkOz: 0 },
     };
   }
 
@@ -71,29 +66,6 @@ function () {
       .replace(/"/g, '&quot;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
-  }
-
-  function loadStore() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') return parsed;
-      return {};
-    } catch (_err) {
-      return {};
-    }
-  }
-
-  function saveStore(store) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  }
-
-  function getChildLogs(store, childId) {
-    if (!childId) return {};
-    const childLogs = store[childId];
-    if (childLogs && typeof childLogs === 'object' && !Array.isArray(childLogs)) return childLogs;
-    return {};
   }
 
   function buildDayLogFromData(entry, dateKey) {
@@ -129,45 +101,21 @@ function () {
     };
   }
 
-  function readLocalDayLog(childId, dateKey) {
-    const store = loadStore();
-    const entry = getChildLogs(store, childId)[dateKey];
-    return buildDayLogFromData(entry, dateKey);
-  }
-
-  function writeLocalDayLog(childId, dateKey, dayLog) {
-    if (!childId) return;
-    const store = loadStore();
-    if (!store[childId] || typeof store[childId] !== 'object') {
-      store[childId] = {};
-    }
-    store[childId][dateKey] = {
-      date: dateKey,
-      meals: dayLog.meals,
-      snacks: dayLog.snacks,
-      hydration: dayLog.hydration,
-    };
-    saveStore(store);
-  }
-
   function getDerived(dayLog) {
-    const hydrationTotalOz = clampNumber(dayLog.hydration.waterOz, 0, 300) +
-      clampNumber(dayLog.hydration.milkOz, 0, 300);
-
-    return { hydrationTotalOz };
+    return {
+      hydrationTotalOz:
+        clampNumber(dayLog.hydration.waterOz, 0, 300) +
+        clampNumber(dayLog.hydration.milkOz, 0, 300),
+    };
   }
 
   function renderCurrentDate() {
     if (!dateEl) return;
     dateEl.textContent = selectedDate.toLocaleDateString(undefined, {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
+      month: 'long', day: 'numeric', year: 'numeric',
     });
     if (dateHeadingEl) {
-      dateHeadingEl.textContent = selectedDate.toLocaleDateString(undefined, {
-        weekday: 'long',
-      });
+      dateHeadingEl.textContent = selectedDate.toLocaleDateString(undefined, { weekday: 'long' });
     }
   }
 
@@ -189,8 +137,9 @@ function () {
   function renderHydration(dayLog) {
     setInputValue('water-oz', dayLog.hydration.waterOz || '');
     setInputValue('milk-oz', dayLog.hydration.milkOz || '');
-    const total = getDerived(dayLog).hydrationTotalOz;
-    if (hydrationTotalEl) hydrationTotalEl.textContent = `${total} oz`;
+    if (hydrationTotalEl) {
+      hydrationTotalEl.textContent = `${getDerived(dayLog).hydrationTotalOz} oz`;
+    }
   }
 
   function makeSnackRowHtml(snack) {
@@ -211,30 +160,45 @@ function () {
 
   function renderSnacks(dayLog) {
     if (!snackListEl) return;
-
-    if (!dayLog.snacks.length) {
-      snackListEl.innerHTML = '<p class="diet-muted-msg">No snacks added yet.</p>';
-      return;
-    }
-
-    snackListEl.innerHTML = dayLog.snacks.map(makeSnackRowHtml).join('');
+    snackListEl.innerHTML = dayLog.snacks.length
+      ? dayLog.snacks.map(makeSnackRowHtml).join('')
+      : '<p class="diet-muted-msg">No snacks added yet.</p>';
   }
 
   function readSnacksFromDom() {
     if (!snackListEl) return [];
-    const rows = snackListEl.querySelectorAll('.snack-row');
-    const snacks = [];
-    rows.forEach((row) => {
-      const id = cleanText(row.getAttribute('data-snack-id'), 40) || makeSnackId();
-      const timeEl = row.querySelector('.snack-time');
-      const foodEl = row.querySelector('.snack-food');
-      snacks.push({
-        id,
-        time: cleanText(timeEl?.value, 5),
-        food: cleanText(foodEl?.value, 120),
-      });
+    return Array.from(snackListEl.querySelectorAll('.snack-row')).map((row) => ({
+      id: cleanText(row.getAttribute('data-snack-id'), 40) || makeSnackId(),
+      time: cleanText(row.querySelector('.snack-time')?.value, 5),
+      food: cleanText(row.querySelector('.snack-food')?.value, 120),
+    }));
+  }
+
+  let saveStatusTimer = null;
+  function showSaveStatus(text, type) {
+    const el = document.getElementById('diet-save-status');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'diet-save-status' + (type ? ` ${type}` : '');
+    clearTimeout(saveStatusTimer);
+    if (type === 'success') {
+      saveStatusTimer = setTimeout(() => {
+        el.textContent = '';
+        el.className = 'diet-save-status';
+      }, 3000);
+    }
+  }
+
+  async function apiRequest(method, path, body) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
     });
-    return snacks;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
   }
 
   function saveSelectedDayFromDom() {
@@ -248,15 +212,18 @@ function () {
     dayLog.meals.lunch.food = cleanText(document.getElementById('lunch-food')?.value, 120);
     dayLog.meals.dinner.time = cleanText(document.getElementById('dinner-time')?.value, 5);
     dayLog.meals.dinner.food = cleanText(document.getElementById('dinner-food')?.value, 120);
-
     dayLog.hydration.waterOz = clampNumber(document.getElementById('water-oz')?.value, 0, 300);
     dayLog.hydration.milkOz = clampNumber(document.getElementById('milk-oz')?.value, 0, 300);
-
     dayLog.snacks = readSnacksFromDom();
+
     currentDayLog = dayLog;
-    writeLocalDayLog(selectedChildId, selectedKey, dayLog);
     renderHydration(dayLog);
-    saveDayLogToServer(selectedChildId, selectedKey, dayLog)
+
+    apiRequest('PUT', '/dietlogs/day', {
+      childid: Number(selectedChildId),
+      date: selectedKey,
+      data: dayLog,
+    })
       .then(() => showSaveStatus('Saved', 'success'))
       .catch((err) => showSaveStatus('Save failed: ' + (err.message || 'unknown error'), 'error'));
   }
@@ -267,7 +234,6 @@ function () {
     const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
     dayLog.snacks.push({ id: makeSnackId(), time: '', food: '' });
     currentDayLog = dayLog;
-    writeLocalDayLog(selectedChildId, selectedKey, dayLog);
     renderSnacks(dayLog);
     saveSelectedDayFromDom();
   }
@@ -278,33 +244,16 @@ function () {
     const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
     dayLog.snacks = dayLog.snacks.filter((snack) => snack.id !== id);
     currentDayLog = dayLog;
-    writeLocalDayLog(selectedChildId, selectedKey, dayLog);
     renderSnacks(dayLog);
     saveSelectedDayFromDom();
   }
 
   function setFormDisabled(disabled) {
-    const ids = [
-      'breakfast-time', 'breakfast-food',
-      'lunch-time', 'lunch-food',
-      'dinner-time', 'dinner-food',
-      'water-oz', 'milk-oz',
-    ];
-
-    ids.forEach((id) => {
+    ['breakfast-time', 'breakfast-food', 'lunch-time', 'lunch-food', 'dinner-time', 'dinner-food', 'water-oz', 'milk-oz'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.disabled = disabled;
     });
-
     if (addSnackBtn) addSnackBtn.disabled = disabled;
-  }
-
-  function clearSelectedDayUi() {
-    const empty = makeDefaultDayLog(getSelectedDateKey());
-    currentDayLog = empty;
-    renderMeals(empty);
-    renderHydration(empty);
-    renderSnacks(empty);
   }
 
   function loadSelectedDayIntoUi() {
@@ -313,42 +262,42 @@ function () {
 
     if (!selectedChildId) {
       setFormDisabled(true);
-      clearSelectedDayUi();
+      const empty = makeDefaultDayLog(selectedKey);
+      currentDayLog = empty;
+      renderMeals(empty);
+      renderHydration(empty);
+      renderSnacks(empty);
       return;
     }
 
     setFormDisabled(false);
+    showSaveStatus('Loading...', '');
     const token = `${selectedChildId}:${selectedKey}:${Date.now()}`;
     latestLoadToken = token;
 
-    fetchDayLogFromServer(selectedChildId, selectedKey)
-      .then((dayLog) => {
+    apiRequest('GET', `/dietlogs/day?childid=${encodeURIComponent(selectedChildId)}&date=${encodeURIComponent(selectedKey)}`)
+      .then((payload) => {
         if (latestLoadToken !== token) return;
+        const dayLog = buildDayLogFromData(payload?.data || null, selectedKey);
         currentDayLog = dayLog;
-        writeLocalDayLog(selectedChildId, selectedKey, dayLog);
         renderMeals(dayLog);
         renderHydration(dayLog);
         renderSnacks(dayLog);
+        showSaveStatus('', '');
       })
-      .catch(() => {
+      .catch((err) => {
         if (latestLoadToken !== token) return;
-        const fallback = readLocalDayLog(selectedChildId, selectedKey);
-        currentDayLog = fallback;
-        renderMeals(fallback);
-        renderHydration(fallback);
-        renderSnacks(fallback);
+        showSaveStatus('Failed to load: ' + (err.message || 'unknown error'), 'error');
+        const empty = makeDefaultDayLog(selectedKey);
+        currentDayLog = empty;
+        renderMeals(empty);
+        renderHydration(empty);
+        renderSnacks(empty);
       });
   }
 
   function bindListeners() {
-    const mealAndHydrationIds = [
-      'breakfast-time', 'breakfast-food',
-      'lunch-time', 'lunch-food',
-      'dinner-time', 'dinner-food',
-      'water-oz', 'milk-oz',
-    ];
-
-    mealAndHydrationIds.forEach((id) => {
+    ['breakfast-time', 'breakfast-food', 'lunch-time', 'lunch-food', 'dinner-time', 'dinner-food', 'water-oz', 'milk-oz'].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', saveSelectedDayFromDom);
@@ -358,22 +307,15 @@ function () {
     addSnackBtn?.addEventListener('click', addSnackRow);
 
     snackListEl?.addEventListener('input', (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      if (target.classList.contains('snack-time') || target.classList.contains('snack-food')) {
+      if (event.target.classList.contains('snack-time') || event.target.classList.contains('snack-food')) {
         saveSelectedDayFromDom();
       }
     });
 
     snackListEl?.addEventListener('click', (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      if (!target.classList.contains('snack-remove-btn')) return;
-
-      const row = target.closest('.snack-row');
-      const id = row?.getAttribute('data-snack-id');
-      if (!id) return;
-      removeSnackRow(id);
+      if (!event.target.classList.contains('snack-remove-btn')) return;
+      const id = event.target.closest('.snack-row')?.getAttribute('data-snack-id');
+      if (id) removeSnackRow(id);
     });
 
     prevDayBtn?.addEventListener('click', () => {
@@ -397,60 +339,17 @@ function () {
       }
       loadSelectedDayIntoUi();
     });
-
-  }
-
-  async function apiRequest(method, path, body) {
-    const res = await fetch(`${API_BASE}${path}`, {
-      method,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Request failed');
-    return data;
-  }
-
-  async function fetchDayLogFromServer(childId, dateKey) {
-    const payload = await apiRequest('GET', `/dietlogs/day?childid=${encodeURIComponent(childId)}&date=${encodeURIComponent(dateKey)}`);
-    const serverData = payload?.data;
-    if (serverData && typeof serverData === 'object') {
-      return buildDayLogFromData(serverData, dateKey);
-    }
-    return readLocalDayLog(childId, dateKey);
-  }
-
-  let saveStatusTimer = null;
-  function showSaveStatus(text, type) {
-    const el = document.getElementById('diet-save-status');
-    if (!el) return;
-    el.textContent = text;
-    el.className = 'diet-save-status' + (type ? ` ${type}` : '');
-    clearTimeout(saveStatusTimer);
-    if (type === 'success') {
-      saveStatusTimer = setTimeout(() => { el.textContent = ''; el.className = 'diet-save-status'; }, 3000);
-    }
-  }
-
-  async function saveDayLogToServer(childId, dateKey, dayLog) {
-    await apiRequest('PUT', '/dietlogs/day', {
-      childid: Number(childId),
-      date: dateKey,
-      data: dayLog,
-    });
   }
 
   async function loadChildren() {
     if (!childSelectEl) return;
-
     try {
       const children = await apiRequest('GET', '/children');
       childSelectEl.innerHTML = '<option value="">-- Choose a child --</option>' +
-        children.map((child) => `<option value="${child.childid}">${child.firstname} ${child.lastname}</option>`).join('');
+        children.map((c) => `<option value="${c.childid}">${c.firstname} ${c.lastname}</option>`).join('');
 
       const saved = sessionStorage.getItem(CHILD_STORAGE_KEY);
-      if (saved && children.some((child) => String(child.childid) === saved)) {
+      if (saved && children.some((c) => String(c.childid) === saved)) {
         selectedChildId = saved;
       } else if (children.length > 0) {
         selectedChildId = String(children[0].childid);
@@ -458,13 +357,11 @@ function () {
       } else {
         selectedChildId = '';
       }
-
       childSelectEl.value = selectedChildId;
     } catch (_err) {
       childSelectEl.innerHTML = '<option value="">-- Unable to load children --</option>';
       selectedChildId = '';
     }
-
     loadSelectedDayIntoUi();
   }
 
@@ -472,7 +369,6 @@ function () {
     selectedDate = new Date();
     selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
     bindListeners();
-    loadSelectedDayIntoUi();
     loadChildren();
   }
 
