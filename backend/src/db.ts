@@ -4,40 +4,39 @@ import * as path from 'path';
 import dotenv from 'dotenv';
 
 const envPath = path.resolve(__dirname, '../../.env');
-dotenv.config({ path: envPath });
-const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf-8') : '';
-
-const hostMatch = envContent.match(/RDSHOST="([^"]+)"/);
-const portMatch = envContent.match(/port=(\d+)/);
-const dbnameMatch = envContent.match(/dbname=([^\s"]+)/);
-const userMatch = envContent.match(/\buser=([^\s"]+)/);
-const passwordMatch = envContent.match(/password=([^\s"]+)/);
-const sslcertMatch = envContent.match(/sslrootcert=([^\s"]+)/);
-
-function firstDefined(...values: Array<string | undefined>): string | undefined {
-  return values.find((value) => typeof value === 'string' && value.trim() !== '')?.trim();
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
 }
 
-const host = firstDefined(process.env.DB_HOST, process.env.RDSHOST, hostMatch?.[1]) ?? '';
-const port = Number(firstDefined(process.env.DB_PORT, process.env.PGPORT, portMatch?.[1]) ?? '5432');
-const database = firstDefined(process.env.DB_NAME, process.env.PGDATABASE, dbnameMatch?.[1]) ?? 'postgres';
-const user = firstDefined(process.env.DB_USER, process.env.PGUSER, userMatch?.[1]) ?? 'postgres';
-const password = firstDefined(process.env.DB_PASSWORD, process.env.PGPASSWORD, passwordMatch?.[1]) ?? '';
-const sslCertPath = firstDefined(process.env.DB_SSL_CERT, process.env.PGSSLROOTCERT, sslcertMatch?.[1]) ?? '';
-const sslEnabled = String(process.env.DB_SSL || '').toLowerCase() === 'true' || !!sslCertPath;
+function parseLegacyEnvValue(pattern: RegExp): string | null {
+  if (!fs.existsSync(envPath)) return null;
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  const match = envContent.match(pattern);
+  return match ? String(match[1]).trim() : null;
+}
 
-let sslConfig: object | false = false;
-if (sslEnabled && sslCertPath && fs.existsSync(sslCertPath)) {
-  sslConfig = { ca: fs.readFileSync(sslCertPath).toString() };
-} else if (sslEnabled) {
-  sslConfig = { rejectUnauthorized: false };
+const host = process.env.DB_HOST || process.env.RDSHOST || parseLegacyEnvValue(/RDSHOST="([^"]+)"/) || '';
+const port = Number(process.env.DB_PORT || process.env.PGPORT || parseLegacyEnvValue(/\bport=(\d+)/) || 5432);
+const database = process.env.DB_NAME || process.env.PGDATABASE || parseLegacyEnvValue(/\bdbname=([^\s"]+)/) || 'postgres';
+const user = process.env.DB_USER || process.env.PGUSER || parseLegacyEnvValue(/\buser=([^\s"]+)/) || 'postgres';
+const password = process.env.DB_PASSWORD || process.env.PGPASSWORD || parseLegacyEnvValue(/\bpassword=([^\s"]+)/) || '';
+
+const sslEnabled = String(process.env.DB_SSL || '').toLowerCase() === 'true';
+const sslCertPath = process.env.DB_SSL_CERT || parseLegacyEnvValue(/\bsslrootcert=([^\s"]+)/) || '';
+
+let ssl: false | { rejectUnauthorized?: boolean; ca?: string } = false;
+if (sslEnabled) {
+  ssl = { rejectUnauthorized: false };
+  if (sslCertPath && fs.existsSync(sslCertPath)) {
+    ssl = { ca: fs.readFileSync(sslCertPath, 'utf-8') };
+  }
 }
 
 export const pool = new Pool({
   host,
-  port: Number.isFinite(port) ? port : 5432,
+  port,
   database,
   user,
   password,
-  ssl: sslConfig,
+  ssl,
 });

@@ -28,6 +28,12 @@ type WeeklyStats = {
   screentime_minutes: number;
 };
 
+type OkrSummary = {
+  percent: number;
+  trackedGoals: number;
+  breakdown: Array<{ category: string; percent: number }>;
+};
+
 function safeNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -69,9 +75,44 @@ function getTrackConfig(category: string, goalType: string): { metricKey: keyof 
   if (normalizedCategory === 'nutrition') return { metricKey: 'nutrition_entries', comingSoon: false };
   if (normalizedCategory === 'fitness') return { metricKey: 'fitness_minutes', comingSoon: false };
   if (normalizedCategory === 'screen time' || normalizedCategory === 'screentime') {
-    return { metricKey: 'screentime_minutes', comingSoon: true };
+    return { metricKey: 'screentime_minutes', comingSoon: false };
   }
   return { metricKey: null, comingSoon: false };
+}
+
+function normalizeCategory(category: string): string {
+  const c = String(category || '').trim().toLowerCase();
+  if (c === 'screentime') return 'screen time';
+  return c;
+}
+
+function computeOkrSummary(goals: Array<any>): OkrSummary {
+  const tracked = goals.filter((goal) => goal.trackedAutomatically && !goal.comingSoon && goal.isactive !== false);
+  if (!tracked.length) {
+    return { percent: 0, trackedGoals: 0, breakdown: [] };
+  }
+
+  const total = tracked.reduce((sum, goal) => sum + safeNumber(goal.progressPercent), 0);
+  const categoryMap = new Map<string, { total: number; count: number }>();
+
+  tracked.forEach((goal) => {
+    const category = normalizeCategory(goal.category);
+    const current = categoryMap.get(category) || { total: 0, count: 0 };
+    current.total += safeNumber(goal.progressPercent);
+    current.count += 1;
+    categoryMap.set(category, current);
+  });
+
+  const breakdown = Array.from(categoryMap.entries()).map(([category, stats]) => ({
+    category,
+    percent: Math.round(stats.total / Math.max(stats.count, 1)),
+  }));
+
+  return {
+    percent: Math.round(total / tracked.length),
+    trackedGoals: tracked.length,
+    breakdown,
+  };
 }
 
 async function loadWeeklyStatsForUser(userId: number): Promise<Map<number, WeeklyStats>> {
@@ -180,6 +221,8 @@ router.get('/summary', async (req, res) => {
         };
       });
 
+      const okr = computeOkrSummary(goals);
+
       return {
         childid: childId,
         firstname: child.firstname,
@@ -187,12 +230,23 @@ router.get('/summary', async (req, res) => {
         age: child.age,
         weekly,
         goals,
+        okr,
       };
     });
+
+    const childrenWithOkr = children.filter((child) => child.okr.trackedGoals > 0);
+    const overallOkrPercent = childrenWithOkr.length
+      ? Math.round(childrenWithOkr.reduce((sum, child) => sum + safeNumber(child.okr.percent), 0) / childrenWithOkr.length)
+      : 0;
+    const trackedGoalsTotal = children.reduce((sum, child) => sum + safeNumber(child.okr.trackedGoals), 0);
 
     res.json({
       weekStart: weekRangeResult.rows[0]?.week_start ?? null,
       weekEnd: weekRangeResult.rows[0]?.week_end ?? null,
+      okr: {
+        percent: overallOkrPercent,
+        trackedGoals: trackedGoalsTotal,
+      },
       children,
     });
   } catch (err: any) {

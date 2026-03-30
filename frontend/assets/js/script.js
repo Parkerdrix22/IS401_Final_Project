@@ -36,8 +36,17 @@ async function request(method, path, body) {
   if (body) options.body = JSON.stringify(body);
   const res = await fetch(`${API_BASE}${path}`, options);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  if (!res.ok) {
+    const err = new Error(data.error || 'Request failed');
+    err.status = res.status;
+    throw err;
+  }
   return data;
+}
+
+function isProtectedPage() {
+  const page = window.location.pathname.split('/').pop() || '';
+  return ['diet.html', 'fitness.html', 'screentime.html', 'goals.html', 'profile.html'].includes(page);
 }
 
 function renderHomeWelcome(user) {
@@ -139,7 +148,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const summary = await request('GET', '/streaks/summary');
       renderFamilySnapshot(summary);
     }
-  } catch (_err) {
+  } catch (err) {
     setLoggedOutNav();
+    if (err?.status === 401 && isProtectedPage()) {
+      window.location.assign('login.html');
+    }
   }
 });

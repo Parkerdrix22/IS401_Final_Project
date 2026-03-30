@@ -44,13 +44,36 @@ async function goalsRequest(method, path, body) {
 }
 
 function goalTemplateDefaults(template) {
-  const base = { category: 'Fitness', goaltype: 'at_least', unit: 'minutes', goalName: 'Weekly Fitness Minutes' };
-  if (template === 'nutrition_entries') return { category: 'Nutrition', goaltype: 'at_least', unit: 'entries', goalName: 'Nutrition Entries' };
-  if (template === 'nutrition_healthy_entries') return { category: 'Nutrition', goaltype: 'at_least', unit: 'healthy entries', goalName: 'Healthy Nutrition Entries' };
-  if (template === 'nutrition_servings') return { category: 'Nutrition', goaltype: 'at_least', unit: 'servings', goalName: 'Nutrition Servings' };
-  if (template === 'fitness_minutes') return { category: 'Fitness', goaltype: 'at_least', unit: 'minutes', goalName: 'Fitness Minutes' };
-  if (template === 'screentime_minutes') return { category: 'Screen Time', goaltype: 'at_most', unit: 'minutes', goalName: 'Screen Time Limit' };
-  return { category: 'Custom', goaltype: 'manual', unit: 'points', goalName: 'Manual Goal' };
+  if (template === 'nutrition_entries') return { category: 'Nutrition', goaltype: 'at_least', unit: 'entries', goalName: 'Nutrition Entries', suggestedTarget: 14 };
+  if (template === 'nutrition_healthy_entries') return { category: 'Nutrition', goaltype: 'at_least', unit: 'healthy entries', goalName: 'Healthy Nutrition Entries', suggestedTarget: 10 };
+  if (template === 'nutrition_servings') return { category: 'Nutrition', goaltype: 'at_least', unit: 'servings', goalName: 'Nutrition Servings', suggestedTarget: 21 };
+  if (template === 'fitness_minutes') return { category: 'Fitness', goaltype: 'at_least', unit: 'minutes', goalName: 'Fitness Minutes', suggestedTarget: 150 };
+  if (template === 'screentime_minutes') return { category: 'Screen Time', goaltype: 'at_most', unit: 'minutes', goalName: 'Screen Time Limit', suggestedTarget: 420 };
+  return { category: 'Custom', goaltype: 'manual', unit: 'points', goalName: 'Manual Goal', suggestedTarget: 1 };
+}
+
+function toTitleCase(text) {
+  return String(text || '')
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function formatGoalTypeLabel(goalType) {
+  const normalized = String(goalType || '').toLowerCase();
+  if (normalized === 'at_least') return 'Reach at least';
+  if (normalized === 'at_most') return 'Keep under';
+  return 'Track manually';
+}
+
+function normalizeStatus(goal) {
+  const normalized = String(goal.status || '').toLowerCase();
+  if (normalized.includes('completed')) return { label: 'Completed', klass: 'goal-status-badge done' };
+  if (normalized.includes('on track')) return { label: 'On track', klass: 'goal-status-badge on-track' };
+  if (normalized.includes('at risk')) return { label: 'Near limit', klass: 'goal-status-badge warning' };
+  if (normalized.includes('over')) return { label: 'Over limit', klass: 'goal-status-badge danger' };
+  return { label: toTitleCase(goal.status || 'In progress'), klass: 'goal-status-badge neutral' };
 }
 
 function progressStyle(goal) {
@@ -65,26 +88,25 @@ function progressStyle(goal) {
 
 function renderGoalItem(goal, childId) {
   const progress = progressStyle(goal);
-  const comingSoon = goal.comingSoon ? '<span class="goal-chip coming-soon">Coming Soon</span>' : '';
-  const autoChip = goal.trackedAutomatically ? '<span class="goal-chip">Auto tracked</span>' : '<span class="goal-chip">Manual</span>';
+  const statusBadge = normalizeStatus(goal);
+  const goalTypeLabel = formatGoalTypeLabel(goal.goaltype);
+  const categoryLabel = toTitleCase(goal.category || 'Goal');
   return `
     <article class="goal-item" data-goalid="${goal.goalid}" data-childid="${childId}">
       <div class="goal-item-header">
-        <h4>${goal.category} goal</h4>
+        <h4>${categoryLabel} goal</h4>
         <div class="goal-item-actions">
-          ${autoChip}
-          ${comingSoon}
           <button type="button" class="goal-action-btn" data-goal-edit="${goal.goalid}">Edit</button>
           <button type="button" class="goal-action-btn danger" data-goal-delete="${goal.goalid}">Delete</button>
         </div>
       </div>
       <p class="goal-meta">
-        Type: ${goal.goaltype} | Target: ${goal.targetvalue} ${goal.unit} | Current: ${goal.value} ${goal.unit}
+        ${goalTypeLabel}: <strong>${goal.targetvalue} ${goal.unit}</strong> this week | Current: <strong>${goal.value} ${goal.unit}</strong>
       </p>
       <div class="goal-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.width}">
         <div class="${progress.klass}" style="width:${progress.width}%"></div>
       </div>
-      <p class="goal-status">${goal.status}</p>
+      <p class="goal-status"><span class="${statusBadge.klass}">${statusBadge.label}</span></p>
     </article>
   `;
 }
@@ -100,6 +122,8 @@ function resolveActiveChildId(children) {
 
 function renderChildCard(child) {
   const screenHours = (Number(child.weekly.screentime_minutes || 0) / 60).toFixed(1);
+  const okrPercent = Number(child.okr?.percent || 0);
+  const okrTrackedGoals = Number(child.okr?.trackedGoals || 0);
   return `
     <section class="goals-child-card" data-childid="${child.childid}">
       <div class="goals-child-header">
@@ -107,58 +131,83 @@ function renderChildCard(child) {
         <p>Age ${child.age ?? '-'}</p>
       </div>
 
-      <div class="goals-weekly-summary">
-        <div class="goals-summary-tile">
-          <p class="goals-summary-label">Nutrition (week)</p>
-          <p class="goals-summary-value">${child.weekly.nutrition_entries} entries</p>
+      <p class="goals-quick-summary">
+        This week: Nutrition ${child.weekly.nutrition_entries} entries • Fitness ${child.weekly.fitness_minutes} min • Screen time ${screenHours} hr
+      </p>
+
+      <div class="goals-child-okr">
+        <div>
+          <p class="goals-summary-label">Weekly completion</p>
+          <p class="goals-child-okr-value">${okrPercent}%</p>
         </div>
-        <div class="goals-summary-tile">
-          <p class="goals-summary-label">Fitness (week)</p>
-          <p class="goals-summary-value">${child.weekly.fitness_minutes} minutes</p>
-        </div>
-        <div class="goals-summary-tile">
-          <p class="goals-summary-label">Screen Time (week)</p>
-          <p class="goals-summary-value">${screenHours} hours <span class="goal-chip coming-soon">Coming Soon</span></p>
-        </div>
+        <p class="goals-child-okr-meta">${okrTrackedGoals} auto-tracked goal${okrTrackedGoals === 1 ? '' : 's'}</p>
       </div>
 
+      <h4 class="goals-section-title">Current goals</h4>
       <div class="goals-list" id="goals-list-${child.childid}">
         ${child.goals.length ? child.goals.map((goal) => renderGoalItem(goal, child.childid)).join('') : '<p class="goals-empty">No goals yet. Add one below.</p>'}
       </div>
 
-      <form class="goal-create-form" data-goal-form="${child.childid}">
-        <h4>Add Goal</h4>
-        <div class="goal-form-grid">
-          <label>
-            Goal Template
-            <select name="template" required>
-              <option value="nutrition_entries">Nutrition entries (weekly)</option>
-              <option value="nutrition_healthy_entries">Healthy nutrition entries (weekly)</option>
-              <option value="nutrition_servings">Nutrition servings (weekly)</option>
-              <option value="fitness_minutes">Fitness minutes (weekly)</option>
-              <option value="screentime_minutes">Screen time max minutes (weekly)</option>
-              <option value="manual">Manual self-reported goal</option>
-            </select>
-          </label>
-          <label>
-            Goal Type
-            <select name="goaltype" required>
-              <option value="at_least">At least</option>
-              <option value="at_most">At most</option>
-              <option value="manual">Manual</option>
-            </select>
-          </label>
-          <label>
-            Target Value
-            <input type="number" name="targetvalue" min="1" required />
-          </label>
-          <label>
-            Unit
-            <input type="text" name="unit" maxlength="30" required />
-          </label>
-        </div>
-        <button type="submit" class="auth-btn">Save Goal</button>
-      </form>
+      <details class="goal-create-details">
+        <summary>Add a new goal</summary>
+        <form class="goal-create-form" data-goal-form="${child.childid}">
+          <p class="goals-form-hint">Pick a template first. Goal type and unit will auto-fill for you.</p>
+          <div class="goal-form-grid">
+            <label>
+              Goal Template
+              <select name="template" required>
+                <option value="nutrition_entries">Nutrition entries (weekly)</option>
+                <option value="nutrition_healthy_entries">Healthy nutrition entries (weekly)</option>
+                <option value="nutrition_servings">Nutrition servings (weekly)</option>
+                <option value="fitness_minutes">Fitness minutes (weekly)</option>
+                <option value="screentime_minutes">Screen time max minutes (weekly)</option>
+                <option value="manual">Manual self-reported goal</option>
+              </select>
+            </label>
+            <label>
+              Goal Type
+              <select name="goaltype" required>
+                <option value="at_least">At least</option>
+                <option value="at_most">At most</option>
+                <option value="manual">Manual</option>
+              </select>
+            </label>
+            <label>
+              Target Value
+              <input type="number" name="targetvalue" min="1" required />
+            </label>
+            <label>
+              Unit
+              <input type="text" name="unit" maxlength="30" required />
+            </label>
+          </div>
+          <button type="submit" class="auth-btn">Save Goal</button>
+        </form>
+      </details>
+    </section>
+  `;
+}
+
+function renderOkrCard(summary) {
+  const root = document.getElementById('goals-okr');
+  if (!root) return;
+
+  const weekStart = summary.weekStart ? new Date(summary.weekStart) : null;
+  const weekEnd = summary.weekEnd ? new Date(summary.weekEnd) : null;
+  const rangeLabel = weekStart && weekEnd
+    ? `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+    : 'Current week';
+  const percent = Number(summary.okr?.percent || 0);
+  const trackedGoals = Number(summary.okr?.trackedGoals || 0);
+
+  root.innerHTML = `
+    <section class="goals-okr-card" aria-label="Weekly healthy habits completion">
+      <p class="goals-okr-label">Weekly Healthy Habits Completion</p>
+      <p class="goals-okr-percent">${percent}%</p>
+      <p class="goals-okr-meta">${rangeLabel} • ${trackedGoals} auto-tracked goal${trackedGoals === 1 ? '' : 's'}</p>
+      <div class="goals-okr-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}">
+        <div class="goals-okr-progress-fill" style="width:${Math.max(0, Math.min(100, percent))}%"></div>
+      </div>
     </section>
   `;
 }
@@ -280,6 +329,21 @@ function renderGoalsPage(summary) {
 function bindGoalForms() {
   const forms = document.querySelectorAll('[data-goal-form]');
   forms.forEach((form) => {
+    const templateEl = form.querySelector('select[name="template"]');
+    const goalTypeEl = form.querySelector('select[name="goaltype"]');
+    const targetEl = form.querySelector('input[name="targetvalue"]');
+    const unitEl = form.querySelector('input[name="unit"]');
+
+    const applyTemplateDefaults = () => {
+      const defaults = goalTemplateDefaults(String(templateEl?.value || ''));
+      if (goalTypeEl) goalTypeEl.value = defaults.goaltype;
+      if (unitEl) unitEl.value = defaults.unit;
+      if (targetEl && !targetEl.value) targetEl.value = String(defaults.suggestedTarget || 1);
+    };
+
+    templateEl?.addEventListener('change', applyTemplateDefaults);
+    applyTemplateDefaults();
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const childId = Number(form.getAttribute('data-goal-form'));
@@ -307,7 +371,7 @@ function bindGoalForms() {
 
       try {
         await goalsRequest('POST', '/goals', payload);
-        showGoalsMessage('Goal added.', 'success');
+        showGoalsMessage('Goal saved successfully.', 'success');
         await loadGoalsSummary();
       } catch (err) {
         showGoalsMessage(err.message, 'error');
@@ -393,6 +457,7 @@ function bindGoalActions() {
 async function loadGoalsSummary() {
   const summary = await goalsRequest('GET', '/goals/summary');
   goalsState.summary = summary;
+  renderOkrCard(summary);
   renderGoalsPage(summary);
   bindGoalForms();
   bindGoalActions();
