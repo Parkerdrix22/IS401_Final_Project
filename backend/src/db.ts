@@ -21,7 +21,7 @@ const database = process.env.DB_NAME || process.env.PGDATABASE || parseLegacyEnv
 const user = process.env.DB_USER || process.env.PGUSER || parseLegacyEnvValue(/\buser=([^\s"]+)/) || 'postgres';
 const password = process.env.DB_PASSWORD || process.env.PGPASSWORD || parseLegacyEnvValue(/\bpassword=([^\s"]+)/) || '';
 
-const sslEnabled = String(process.env.DB_SSL || '').toLowerCase() === 'true';
+const sslEnabled = String(process.env.DB_SSL || 'true').toLowerCase() !== 'false';
 const sslCertPath = process.env.DB_SSL_CERT || parseLegacyEnvValue(/\bsslrootcert=([^\s"]+)/) || '';
 
 let ssl: false | { rejectUnauthorized?: boolean; ca?: string } = false;
