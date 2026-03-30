@@ -65,14 +65,14 @@
 
           <!-- Charts Section -->
           <div class="screentime-charts-grid">
-            <!-- Weekly screen time chart -->
+            <!-- Screen time on selected day by category chart -->
             <div class="screentime-chart-card">
-              <h2>Screen Time This Week</h2>
-              <p class="screentime-chart-desc">Minutes per day (Sunday through Saturday)</p>
+              <h2>Screen Time on Selected Day</h2>
+              <p class="screentime-chart-desc">Usage by category</p>
               <div class="chart-wrapper">
-                <canvas id="weekly-screentime-chart" aria-label="Screen time per day this week"></canvas>
+                <canvas id="selected-day-chart" aria-label="Screen time by category on selected day"></canvas>
               </div>
-              <p id="weekly-chart-empty-msg" class="screentime-empty-msg" style="display: none;">No screen time data yet. Log entries below to see your history.</p>
+              <p id="selected-day-chart-empty-msg" class="screentime-empty-msg" style="display: none;">No data for this day. Log entries below to see the breakdown.</p>
             </div>
 
             <!-- Category breakdown chart -->
@@ -112,6 +112,16 @@
               </div>
               <button type="button" id="screentime-apply-filters" class="screentime-btn">Apply Filters</button>
             </div>
+          </div>
+
+          <!-- Filtered data chart -->
+          <div class="screentime-chart-card">
+            <h2>Filtered Results</h2>
+            <p class="screentime-chart-desc">Screen time for selected date range</p>
+            <div class="chart-wrapper">
+              <canvas id="filtered-chart" aria-label="Filtered screen time data"></canvas>
+            </div>
+            <p id="filtered-chart-empty-msg" class="screentime-empty-msg" style="display: none;">No data for the selected filter. Try adjusting your filters.</p>
           </div>
 
           <!-- Log screen time form -->

@@ -7,8 +7,9 @@
   const screentimeList = document.getElementById('screentime-list');
   const formMsg = document.getElementById('screentime-form-msg');
   const listEmptyMsg = document.getElementById('list-empty-msg');
-  const weeklyChartEmptyMsg = document.getElementById('weekly-chart-empty-msg');
+  const selectedDayChartEmptyMsg = document.getElementById('selected-day-chart-empty-msg');
   const categoryChartEmptyMsg = document.getElementById('category-chart-empty-msg');
+  const filteredChartEmptyMsg = document.getElementById('filtered-chart-empty-msg');
   const prevDayBtn = document.getElementById('screentime-prev-day');
   const nextDayBtn = document.getElementById('screentime-next-day');
   const dayHeadingEl = document.getElementById('screentime-date-heading');
@@ -22,9 +23,11 @@
   // State
   let selectedDate = new Date();
   let activeChildId = null;
-  let weeklyChart = null;
+  let selectedDayChart = null;
   let categoryChart = null;
+  let filteredChart = null;
   let allEntries = [];
+  let filteredEntries = [];
 
   // API Helper
   async function api(method, path, body) {
@@ -133,69 +136,71 @@
     try {
       const entries = await api('GET', `/screentimelog?childid=${activeChildId}`);
       allEntries = Array.isArray(entries) ? entries : [];
-      renderWeeklyChart();
+      filteredEntries = [];
+      renderSelectedDayChart();
       renderCategoryChart();
       renderCurrentDayEntries();
+      renderFilteredChart();
     } catch (err) {
       console.error('Failed to load screen time entries:', err);
       allEntries = [];
-      renderWeeklyChart();
+      filteredEntries = [];
+      renderSelectedDayChart();
       renderCategoryChart();
       renderCurrentDayEntries();
+      renderFilteredChart();
     }
   }
 
   // Render Weekly Chart
-  function renderWeeklyChart() {
-    const weekDates = getWeekDates(selectedDate);
-    const weekLabels = weekDates.map((d) => d.toLocaleDateString(undefined, { weekday: 'short' }));
-
-    const minutesByDay = {};
-    weekDates.forEach((d) => {
-      minutesByDay[toLocalDateKey(d)] = 0;
+  // Render Selected Day Chart (by category)
+  function renderSelectedDayChart() {
+    const dateKey = toLocalDateKey(selectedDate);
+    const dayEntries = allEntries.filter((entry) => {
+      const entryDateKey = toLocalDateKey(normalizeToDateOnly(new Date(entry.timecreated || new Date())));
+      return entryDateKey === dateKey;
     });
 
-    allEntries.forEach((entry) => {
-      const dateKey = toLocalDateKey(entry.timecreated || new Date());
-      const entryDate = normalizeToDateOnly(new Date(entry.timecreated || new Date()));
-      const entryDateKey = toLocalDateKey(entryDate);
-
-      if (minutesByDay.hasOwnProperty(entryDateKey)) {
-        const duration = entry.durationunit === 'hours' 
-          ? entry.duration * 60 
-          : entry.duration;
-        minutesByDay[entryDateKey] += duration;
-      }
+    const categoryMinutes = {};
+    dayEntries.forEach((entry) => {
+      const category = entry.activitytype || 'Other';
+      const duration = entry.durationunit === 'hours' 
+        ? entry.duration * 60 
+        : entry.duration;
+      categoryMinutes[category] = (categoryMinutes[category] || 0) + duration;
     });
 
-    const data = weekDates.map((d) => minutesByDay[toLocalDateKey(d)]);
-    const hasData = data.some((val) => val > 0);
+    const categories = Object.keys(categoryMinutes);
+    const hasData = categories.length > 0;
 
-    const canvas = document.getElementById('weekly-screentime-chart');
+    const canvas = document.getElementById('selected-day-chart');
     if (!canvas) return;
 
     if (!hasData) {
-      if (weeklyChartEmptyMsg) weeklyChartEmptyMsg.style.display = 'block';
-      if (weeklyChart) {
-        weeklyChart.destroy();
-        weeklyChart = null;
+      if (selectedDayChartEmptyMsg) selectedDayChartEmptyMsg.style.display = 'block';
+      if (selectedDayChart) {
+        selectedDayChart.destroy();
+        selectedDayChart = null;
       }
       return;
     }
 
-    if (weeklyChartEmptyMsg) weeklyChartEmptyMsg.style.display = 'none';
+    if (selectedDayChartEmptyMsg) selectedDayChartEmptyMsg.style.display = 'none';
+
+    const colors = ['#2e9a57', '#43b86e', '#1d7b43', '#0f4d2f', '#5fc985', '#b8e5c7'];
+    const data = categories.map((cat) => categoryMinutes[cat]);
 
     const ctx = canvas.getContext('2d');
-    if (weeklyChart) weeklyChart.destroy();
+    if (selectedDayChart) selectedDayChart.destroy();
 
-    weeklyChart = new Chart(ctx, {
+    selectedDayChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: weekLabels,
+        labels: categories,
         datasets: [{
-          label: 'Screen Time (minutes)',
+          label: 'Minutes',
           data,
-          backgroundColor: '#2e9a57',
+          backgroundColor: colors.slice(0, categories.length),
           borderColor: '#1d7b43',
           borderWidth: 1.5,
           borderRadius: 6,
@@ -204,16 +209,17 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        indexAxis: 'y',
         plugins: {
           legend: { display: false },
         },
         scales: {
-          y: {
+          x: {
             beginAtZero: true,
             ticks: { color: '#4b6a5d' },
             grid: { color: '#e5ece8' },
           },
-          x: {
+          y: {
             ticks: { color: '#4b6a5d' },
             grid: { display: false },
           },
@@ -289,17 +295,17 @@
   // Render Current Day Entries
   function renderCurrentDayEntries() {
     const dateKey = toLocalDateKey(selectedDate);
-    const filteredEntries = allEntries.filter((entry) => {
+    const dayEntries = allEntries.filter((entry) => {
       const entryDateKey = toLocalDateKey(normalizeToDateOnly(new Date(entry.timecreated || new Date())));
       return entryDateKey === dateKey;
     });
 
     if (listEmptyMsg) {
-      listEmptyMsg.style.display = filteredEntries.length === 0 ? 'block' : 'none';
+      listEmptyMsg.style.display = dayEntries.length === 0 ? 'block' : 'none';
     }
 
     if (!screentimeList) return;
-    screentimeList.innerHTML = filteredEntries
+    screentimeList.innerHTML = dayEntries
       .map((entry) => {
         const dateObj = new Date(entry.timecreated || new Date());
         const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -325,6 +331,77 @@
     // Add event listeners for delete buttons
     screentimeList.querySelectorAll('.screentime-delete').forEach((btn) => {
       btn.addEventListener('click', handleDeleteEntry);
+    });
+  }
+
+  // Render Filtered Chart (by date range)
+  function renderFilteredChart() {
+    if (filteredEntries.length === 0) {
+      if (filteredChartEmptyMsg) filteredChartEmptyMsg.style.display = 'block';
+      if (filteredChart) {
+        filteredChart.destroy();
+        filteredChart = null;
+      }
+      return;
+    }
+
+    if (filteredChartEmptyMsg) filteredChartEmptyMsg.style.display = 'none';
+
+    // Group filtered entries by date and calculate minutes per day
+    const minutesByDate = {};
+    filteredEntries.forEach((entry) => {
+      const dateKey = toLocalDateKey(normalizeToDateOnly(new Date(entry.timecreated || new Date())));
+      const duration = entry.durationunit === 'hours' 
+        ? entry.duration * 60 
+        : entry.duration;
+      minutesByDate[dateKey] = (minutesByDate[dateKey] || 0) + duration;
+    });
+
+    // Sort dates and prepare chart data
+    const sortedDates = Object.keys(minutesByDate).sort();
+    const labels = sortedDates.map((d) => {
+      const date = new Date(d + 'T00:00:00');
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    });
+    const data = sortedDates.map((d) => minutesByDate[d]);
+
+    const canvas = document.getElementById('filtered-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (filteredChart) filteredChart.destroy();
+
+    filteredChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Screen Time (minutes)',
+          data,
+          backgroundColor: '#2e9a57',
+          borderColor: '#1d7b43',
+          borderWidth: 1.5,
+          borderRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#4b6a5d' },
+            grid: { color: '#e5ece8' },
+          },
+          x: {
+            ticks: { color: '#4b6a5d' },
+            grid: { display: false },
+          },
+        },
+      },
     });
   }
 
@@ -404,6 +481,7 @@
   function handlePrevDay() {
     selectedDate.setDate(selectedDate.getDate() - 1);
     renderSelectedDay();
+    renderSelectedDayChart();
     renderCategoryChart();
     renderCurrentDayEntries();
   }
@@ -411,6 +489,7 @@
   function handleNextDay() {
     selectedDate.setDate(selectedDate.getDate() + 1);
     renderSelectedDay();
+    renderSelectedDayChart();
     renderCategoryChart();
     renderCurrentDayEntries();
   }
@@ -433,10 +512,8 @@
       if (category) path += `&category=${encodeURIComponent(category)}`;
 
       const entries = await api('GET', path);
-      allEntries = Array.isArray(entries) ? entries : [];
-      renderWeeklyChart();
-      renderCategoryChart();
-      renderCurrentDayEntries();
+      filteredEntries = Array.isArray(entries) ? entries : [];
+      renderFilteredChart();
     } catch (err) {
       console.error('Failed to apply filters:', err);
       showFormMsg('Failed to apply filters. Please try again.', 'error');
