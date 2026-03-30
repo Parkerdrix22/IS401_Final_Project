@@ -1796,6 +1796,15 @@ h1 {
   font-style: italic;
 }
 
+.diet-save-status {
+  text-align: center;
+  font-size: 0.85rem;
+  min-height: 1.2em;
+  margin-top: 0.5rem;
+}
+.diet-save-status.success { color: var(--green, #2e9a57); }
+.diet-save-status.error   { color: #e53e3e; }
+
 .diet-hydration-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

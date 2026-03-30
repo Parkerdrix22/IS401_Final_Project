@@ -15,6 +15,7 @@ import workoutideasRoutes  from './routes/workoutideas';
 import recipesRoutes       from './routes/recipes';
 import tipsRoutes          from './routes/tips';
 import streaksRoutes       from './routes/streaks';
+import uploadRoutes        from './routes/upload';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use(session({
 }));
 
 app.use(express.static(path.resolve(__dirname, '../../frontend')));
+app.use('/images', express.static(path.resolve(__dirname, '../../images')));
 
 app.use('/auth',          authRoutes);
 app.use('/users',         usersRoutes);
@@ -45,5 +47,6 @@ app.use('/workoutideas',  workoutideasRoutes);
 app.use('/recipes',       recipesRoutes);
 app.use('/tips',          tipsRoutes);
 app.use('/streaks',       streaksRoutes);
+app.use('/upload',        uploadRoutes);
 
 export default app;

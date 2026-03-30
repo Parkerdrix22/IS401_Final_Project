@@ -163,7 +163,9 @@ function () {
   function normalizeImageData(value) {
     if (typeof value !== 'string') return '';
     const trimmed = value.trim();
-    return trimmed.startsWith('data:image/') ? trimmed : '';
+    if (trimmed.startsWith('data:image/')) return trimmed;
+    if (trimmed.startsWith('/images/')) return trimmed;
+    return '';
   }
 
   function renderCurrentDate() {
@@ -206,7 +208,8 @@ function () {
       if (!slot) return;
       const imageData = normalizeImageData(dayLog?.meals?.[meal]?.imageData);
       if (imageData) {
-        slot.innerHTML = `<img class="meal-image-preview" src="${imageData}" alt="${meal} meal image">`;
+        const src = imageData.startsWith('/images/') ? `${API_BASE}${imageData}` : imageData;
+        slot.innerHTML = `<img class="meal-image-preview" src="${src}" alt="${meal} meal image">`;
       } else {
         slot.textContent = `Add ${meal} image`;
       }
@@ -283,7 +286,9 @@ function () {
     currentDayLog = dayLog;
     writeLocalDayLog(selectedChildId, selectedKey, dayLog);
     renderHydration(dayLog);
-    saveDayLogToServer(selectedChildId, selectedKey, dayLog).catch(() => {});
+    saveDayLogToServer(selectedChildId, selectedKey, dayLog)
+      .then(() => showSaveStatus('Saved', 'success'))
+      .catch((err) => showSaveStatus('Save failed: ' + (err.message || 'unknown error'), 'error'));
   }
 
   function addSnackRow() {
@@ -457,19 +462,28 @@ function () {
       inputEl.addEventListener('change', () => {
         const file = inputEl.files && inputEl.files[0];
         if (!file || !selectedChildId || !file.type.startsWith('image/')) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result !== 'string') return;
-          const selectedKey = getSelectedDateKey();
-          const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
-          dayLog.meals[meal].imageData = reader.result;
-          currentDayLog = dayLog;
-          writeLocalDayLog(selectedChildId, selectedKey, dayLog);
-          saveDayLogToServer(selectedChildId, selectedKey, dayLog).catch(() => {});
-          renderMeals(dayLog);
-          inputEl.value = '';
-        };
-        reader.readAsDataURL(file);
+        showSaveStatus('Uploading image...', '');
+        const formData = new FormData();
+        formData.append('image', file);
+        fetch(`${API_BASE}/upload/meal-image`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data.path) throw new Error(data.error || 'Upload failed');
+            const selectedKey = getSelectedDateKey();
+            const dayLog = currentDayLog ? buildDayLogFromData(currentDayLog, selectedKey) : makeDefaultDayLog(selectedKey);
+            dayLog.meals[meal].imageData = data.path;
+            currentDayLog = dayLog;
+            writeLocalDayLog(selectedChildId, selectedKey, dayLog);
+            renderMeals(dayLog);
+            inputEl.value = '';
+            return saveDayLogToServer(selectedChildId, selectedKey, dayLog);
+          })
+          .then(() => showSaveStatus('Saved', 'success'))
+          .catch((err) => showSaveStatus('Upload failed: ' + (err.message || 'unknown error'), 'error'));
       });
     });
   }
@@ -493,6 +507,18 @@ function () {
       return buildDayLogFromData(serverData, dateKey);
     }
     return readLocalDayLog(childId, dateKey);
+  }
+
+  let saveStatusTimer = null;
+  function showSaveStatus(text, type) {
+    const el = document.getElementById('diet-save-status');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'diet-save-status' + (type ? ` ${type}` : '');
+    clearTimeout(saveStatusTimer);
+    if (type === 'success') {
+      saveStatusTimer = setTimeout(() => { el.textContent = ''; el.className = 'diet-save-status'; }, 3000);
+    }
   }
 
   async function saveDayLogToServer(childId, dateKey, dayLog) {
