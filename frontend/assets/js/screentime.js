@@ -3,6 +3,7 @@
 
   // DOM Elements
   const childSelect = document.getElementById('screentime-child-select');
+  const viewChildSelect = document.getElementById('screentime-view-child-select');
   const screentimeForm = document.getElementById('screentime-form');
   const screentimeList = document.getElementById('screentime-list');
   const formMsg = document.getElementById('screentime-form-msg');
@@ -19,15 +20,20 @@
   const filterEndDateInput = document.getElementById('screentime-filter-enddate');
   const filterCategoryInput = document.getElementById('screentime-filter-category');
   const screentimeDateInput = document.getElementById('screentime-date');
+  const screentimeTimeInput = document.getElementById('screentime-time');
 
   // State
   let selectedDate = new Date();
   let activeChildId = null;
+  let viewingChildId = null;
   let selectedDayChart = null;
   let categoryChart = null;
   let filteredChart = null;
   let allEntries = [];
   let filteredEntries = [];
+  let filteredStartDate = null;
+  let filteredEndDate = null;
+  let editingEntryId = null;
 
   // API Helper
   async function api(method, path, body) {
@@ -100,25 +106,45 @@
 
   // Load Children
   async function loadChildren() {
-    if (!childSelect) return;
+    if (!childSelect && !viewChildSelect) return;
     try {
       const children = await api('GET', '/children');
-      childSelect.disabled = false;
-      childSelect.innerHTML = '<option value="">— Choose a child —</option>' +
+      const optionsHtml = '<option value="">— Choose a child —</option>' +
         children.map((c) => `<option value="${c.childid}">${c.firstname} ${c.lastname}</option>`).join('');
-
-      const saved = sessionStorage.getItem('screentime-childid');
-      if (saved && children.some((c) => String(c.childid) === saved)) {
-        childSelect.value = saved;
-      } else if (children.length > 0) {
-        childSelect.value = String(children[0].childid);
-        sessionStorage.setItem('screentime-childid', childSelect.value);
-      } else {
-        childSelect.value = '';
+      
+      // Populate Log child selector
+      if (childSelect) {
+        childSelect.disabled = false;
+        childSelect.innerHTML = optionsHtml;
+        const saved = sessionStorage.getItem('screentime-childid');
+        if (saved && children.some((c) => String(c.childid) === saved)) {
+          childSelect.value = saved;
+        } else if (children.length > 0) {
+          childSelect.value = String(children[0].childid);
+          sessionStorage.setItem('screentime-childid', childSelect.value);
+        } else {
+          childSelect.value = '';
+        }
+        activeChildId = childSelect.value ? Number(childSelect.value) : null;
       }
-
-      activeChildId = childSelect.value ? Number(childSelect.value) : null;
-      if (!activeChildId) {
+      
+      // Populate View child selector
+      if (viewChildSelect) {
+        viewChildSelect.disabled = false;
+        viewChildSelect.innerHTML = optionsHtml;
+        const savedView = sessionStorage.getItem('screentime-view-childid');
+        if (savedView && children.some((c) => String(c.childid) === savedView)) {
+          viewChildSelect.value = savedView;
+        } else if (children.length > 0) {
+          viewChildSelect.value = String(children[0].childid);
+          sessionStorage.setItem('screentime-view-childid', viewChildSelect.value);
+        } else {
+          viewChildSelect.value = '';
+        }
+        viewingChildId = viewChildSelect.value ? Number(viewChildSelect.value) : null;
+      }
+      
+      if (!viewingChildId && !activeChildId) {
         showFormMsg('Add a child in Profile to start logging screen time.', 'error');
       } else {
         showFormMsg('', '');
@@ -132,9 +158,9 @@
 
   // Load Screen Time Entries
   async function loadScreenTimeEntries() {
-    if (!activeChildId) return;
+    if (!viewingChildId) return;
     try {
-      const entries = await api('GET', `/screentimelog?childid=${activeChildId}`);
+      const entries = await api('GET', `/screentimelog?childid=${viewingChildId}`);
       allEntries = Array.isArray(entries) ? entries : [];
       filteredEntries = [];
       renderSelectedDayChart();
@@ -153,7 +179,7 @@
   }
 
   // Render Weekly Chart
-  // Render Selected Day Chart (by category)
+  // Render Selected Day Chart (by time ranges)
   function renderSelectedDayChart() {
     const dateKey = toLocalDateKey(selectedDate);
     const dayEntries = allEntries.filter((entry) => {
@@ -161,17 +187,41 @@
       return entryDateKey === dateKey;
     });
 
-    const categoryMinutes = {};
+    // Create time buckets (3-hour ranges)
+    const timeRanges = [
+      { label: '12-3 AM', start: 0, end: 3 },
+      { label: '3-6 AM', start: 3, end: 6 },
+      { label: '6-9 AM', start: 6, end: 9 },
+      { label: '9-12 PM', start: 9, end: 12 },
+      { label: '12-3 PM', start: 12, end: 15 },
+      { label: '3-6 PM', start: 15, end: 18 },
+      { label: '6-9 PM', start: 18, end: 21 },
+      { label: '9-12 AM', start: 21, end: 24 },
+    ];
+
+    const timeMinutes = {};
+    timeRanges.forEach((range) => {
+      timeMinutes[range.label] = 0;
+    });
+
     dayEntries.forEach((entry) => {
-      const category = entry.activitytype || 'Other';
+      const entryDate = new Date(entry.timecreated || new Date());
+      const hour = entryDate.getHours();
       const duration = entry.durationunit === 'hours' 
         ? entry.duration * 60 
         : entry.duration;
-      categoryMinutes[category] = (categoryMinutes[category] || 0) + duration;
+
+      for (let range of timeRanges) {
+        if (hour >= range.start && hour < range.end) {
+          timeMinutes[range.label] += duration;
+          break;
+        }
+      }
     });
 
-    const categories = Object.keys(categoryMinutes);
-    const hasData = categories.length > 0;
+    const labels = timeRanges.map((r) => r.label);
+    const data = labels.map((label) => timeMinutes[label]);
+    const hasData = data.some((val) => val > 0);
 
     const canvas = document.getElementById('selected-day-chart');
     if (!canvas) return;
@@ -187,20 +237,17 @@
 
     if (selectedDayChartEmptyMsg) selectedDayChartEmptyMsg.style.display = 'none';
 
-    const colors = ['#2e9a57', '#43b86e', '#1d7b43', '#0f4d2f', '#5fc985', '#b8e5c7'];
-    const data = categories.map((cat) => categoryMinutes[cat]);
-
     const ctx = canvas.getContext('2d');
     if (selectedDayChart) selectedDayChart.destroy();
 
     selectedDayChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: categories,
+        labels,
         datasets: [{
           label: 'Minutes',
           data,
-          backgroundColor: colors.slice(0, categories.length),
+          backgroundColor: '#2e9a57',
           borderColor: '#1d7b43',
           borderWidth: 1.5,
           borderRadius: 6,
@@ -209,17 +256,16 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'y',
         plugins: {
           legend: { display: false },
         },
         scales: {
-          x: {
+          y: {
             beginAtZero: true,
             ticks: { color: '#4b6a5d' },
             grid: { color: '#e5ece8' },
           },
-          y: {
+          x: {
             ticks: { color: '#4b6a5d' },
             grid: { display: false },
           },
@@ -322,21 +368,27 @@
               <div class="screentime-item-meta">${timeStr}</div>
               ${entry.notes ? `<div class="screentime-item-notes">"${entry.notes}"</div>` : ''}
             </div>
-            <button type="button" class="screentime-delete" data-id="${entry.screenid || entry.id}" aria-label="Delete entry">×</button>
+            <div class="screentime-item-actions">
+              <button type="button" class="screentime-edit" data-id="${entry.screenid || entry.id}" aria-label="Edit entry">✎</button>
+              <button type="button" class="screentime-delete" data-id="${entry.screenid || entry.id}" aria-label="Delete entry">×</button>
+            </div>
           </li>
         `;
       })
       .join('');
 
-    // Add event listeners for delete buttons
+    // Add event listeners for delete and edit buttons
     screentimeList.querySelectorAll('.screentime-delete').forEach((btn) => {
       btn.addEventListener('click', handleDeleteEntry);
+    });
+    screentimeList.querySelectorAll('.screentime-edit').forEach((btn) => {
+      btn.addEventListener('click', handleEditEntry);
     });
   }
 
   // Render Filtered Chart (by date range)
   function renderFilteredChart() {
-    if (filteredEntries.length === 0) {
+    if (!filteredStartDate || !filteredEndDate) {
       if (filteredChartEmptyMsg) filteredChartEmptyMsg.style.display = 'block';
       if (filteredChart) {
         filteredChart.destroy();
@@ -357,13 +409,23 @@
       minutesByDate[dateKey] = (minutesByDate[dateKey] || 0) + duration;
     });
 
-    // Sort dates and prepare chart data
-    const sortedDates = Object.keys(minutesByDate).sort();
-    const labels = sortedDates.map((d) => {
+    // Generate all dates in the range
+    const startDate = new Date(filteredStartDate + 'T00:00:00');
+    const endDate = new Date(filteredEndDate + 'T23:59:59');
+    const allDatesInRange = [];
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateKey = toLocalDateKey(currentDate);
+      allDatesInRange.push(dateKey);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Map all dates to data (0 if no entry for that day)
+    const labels = allDatesInRange.map((d) => {
       const date = new Date(d + 'T00:00:00');
       return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     });
-    const data = sortedDates.map((d) => minutesByDate[d]);
+    const data = allDatesInRange.map((d) => minutesByDate[d] || 0);
 
     const canvas = document.getElementById('filtered-chart');
     if (!canvas) return;
@@ -405,6 +467,38 @@
     });
   }
 
+  // Handle Edit Entry
+  async function handleEditEntry(e) {
+    e.preventDefault();
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    const entry = allEntries.find((ent) => (ent.screenid || ent.id) === Number(id));
+    if (!entry) return;
+
+    editingEntryId = id;
+    const dateObj = new Date(entry.timecreated || new Date());
+    
+    // Populate form with entry data
+    document.getElementById('screentime-category').value = entry.activitytype || '';
+    document.getElementById('screentime-date').value = toLocalDateKey(dateObj);
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+    document.getElementById('screentime-time').value = `${hours}:${minutes}`;
+    document.getElementById('screentime-duration-value').value = entry.durationunit === 'hours' 
+      ? entry.duration 
+      : entry.duration < 60 ? entry.duration : Math.round(entry.duration / 60 * 100) / 100;
+    document.getElementById('screentime-duration-unit').value = entry.durationunit || 'minutes';
+    document.getElementById('screentime-notes').value = entry.notes || '';
+
+    // Change button text
+    const submitBtn = screentimeForm.querySelector('button[type="submit"]');
+    submitBtn.textContent = 'Update Entry';
+    
+    // Scroll to form
+    screentimeForm.scrollIntoView({ behavior: 'smooth' });
+  }
+
   // Handle Screen Time Form Submission
   async function handleSubmit(e) {
     e.preventDefault();
@@ -419,30 +513,60 @@
     const durationUnit = document.getElementById('screentime-duration-unit').value;
     const notes = document.getElementById('screentime-notes').value.trim();
     const entryDate = screentimeDateInput.value;
+    const entryTime = screentimeTimeInput.value;
 
-    if (!category || !durationValue || !entryDate) {
+    if (!category || !durationValue || !entryDate || !entryTime) {
       showFormMsg('Please fill in all required fields.', 'error');
       return;
     }
 
     try {
-      await api('POST', '/screentimelog', {
-        childid: activeChildId,
-        date: entryDate,
-        devicetype: 'Unknown',
-        activitytype: category,
-        duration: durationValue,
-        durationunit: durationUnit,
-        notes: notes || null,
-      });
-
-      showFormMsg('Screen time entry added successfully!', 'success');
+      // Combine date and time into ISO datetime string
+      const dateTimeStr = `${entryDate}T${entryTime}:00`;
+      
+      if (editingEntryId) {
+        // Update existing entry
+        await api('PUT', `/screentimelog/${editingEntryId}`, {
+          date: dateTimeStr,
+          activitytype: category,
+          duration: durationValue,
+          durationunit: durationUnit,
+          notes: notes || null,
+        });
+        showFormMsg('Screen time entry updated successfully!', 'success');
+        editingEntryId = null;
+        const submitBtn = screentimeForm.querySelector('button[type="submit"]');
+        submitBtn.textContent = 'Add Entry';
+      } else {
+        // Create new entry
+        await api('POST', '/screentimelog', {
+          childid: activeChildId,
+          date: dateTimeStr,
+          devicetype: 'Unknown',
+          activitytype: category,
+          duration: durationValue,
+          durationunit: durationUnit,
+          notes: notes || null,
+        });
+        showFormMsg('Screen time entry added successfully!', 'success');
+      }
+      
       screentimeForm.reset();
+      // Restore defaults after reset
+      if (screentimeDateInput) {
+        screentimeDateInput.value = toLocalDateKey(new Date());
+      }
+      if (screentimeTimeInput) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        screentimeTimeInput.value = `${hours}:${minutes}`;
+      }
       await loadScreenTimeEntries();
       setTimeout(() => showFormMsg('', ''), 3000);
     } catch (err) {
-      console.error('Failed to add entry:', err);
-      showFormMsg(err.message || 'Failed to add entry. Please try again.', 'error');
+      console.error('Failed to save entry:', err);
+      showFormMsg(err.message || 'Failed to save entry. Please try again.', 'error');
     }
   }
 
@@ -470,6 +594,16 @@
       activeChildId = newChildId;
       if (childSelect.value) {
         sessionStorage.setItem('screentime-childid', childSelect.value);
+      }
+    }
+  }
+
+  function handleViewChildChange() {
+    const newViewingChildId = viewChildSelect.value ? Number(viewChildSelect.value) : null;
+    if (newViewingChildId !== viewingChildId) {
+      viewingChildId = newViewingChildId;
+      if (viewChildSelect.value) {
+        sessionStorage.setItem('screentime-view-childid', viewChildSelect.value);
       }
       selectedDate = new Date();
       renderSelectedDay();
@@ -500,19 +634,21 @@
     const endDateStr = filterEndDateInput.value;
     const category = filterCategoryInput.value;
 
-    if (!activeChildId) {
+    if (!viewingChildId) {
       showFormMsg('Please select a child first.', 'error');
       return;
     }
 
     try {
-      let path = `/screentimelog?childid=${activeChildId}`;
+      let path = `/screentimelog?childid=${viewingChildId}`;
       if (startDateStr) path += `&startdate=${startDateStr}`;
       if (endDateStr) path += `&enddate=${endDateStr}`;
       if (category) path += `&category=${encodeURIComponent(category)}`;
 
       const entries = await api('GET', path);
       filteredEntries = Array.isArray(entries) ? entries : [];
+      filteredStartDate = startDateStr;
+      filteredEndDate = endDateStr;
       renderFilteredChart();
     } catch (err) {
       console.error('Failed to apply filters:', err);
@@ -523,6 +659,9 @@
   // Event Listeners
   if (childSelect) {
     childSelect.addEventListener('change', handleChildChange);
+  }
+  if (viewChildSelect) {
+    viewChildSelect.addEventListener('change', handleViewChildChange);
   }
   if (screentimeForm) {
     screentimeForm.addEventListener('submit', handleSubmit);
@@ -540,8 +679,14 @@
   // Initialize
   renderSelectedDay();
   loadChildren();
-  // Set default date to today
+  // Set default date to today and time to current time
   if (screentimeDateInput) {
     screentimeDateInput.value = toLocalDateKey(new Date());
+  }
+  if (screentimeTimeInput) {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    screentimeTimeInput.value = `${hours}:${minutes}`;
   }
 })();

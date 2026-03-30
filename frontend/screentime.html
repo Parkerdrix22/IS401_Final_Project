@@ -40,17 +40,8 @@
     <section class="section">
       <div class="container">
         <div class="screentime-layout">
-          <!-- Child selector and date navigation -->
+          <!-- Top row: Date navigation and viewing child selector -->
           <div class="screentime-top-row">
-            <div class="screentime-child-card">
-              <div class="child-selector screentime-child-selector">
-                <label for="screentime-child-select">Select child</label>
-                <select id="screentime-child-select" class="screentime-input">
-                  <option value="">— Choose a child —</option>
-                </select>
-              </div>
-            </div>
-
             <div class="screentime-date-card">
               <div class="screentime-date-nav">
                 <button id="screentime-prev-day" class="screentime-date-btn" type="button" aria-label="Go to previous day">&#8592;</button>
@@ -60,6 +51,12 @@
                 </div>
                 <button id="screentime-next-day" class="screentime-date-btn" type="button" aria-label="Go to next day">&#8594;</button>
               </div>
+            </div>
+            <div class="screentime-view-child-card">
+              <label for="screentime-view-child-select">Select child</label>
+              <select id="screentime-view-child-select" class="screentime-input">
+                <option value="">— Choose a child —</option>
+              </select>
             </div>
           </div>
 
@@ -84,6 +81,65 @@
               </div>
               <p id="category-chart-empty-msg" class="screentime-empty-msg" style="display: none;">No data for this day. Log entries below to see the breakdown.</p>
             </div>
+          </div>
+
+          <!-- Log screen time form -->
+          <div class="screentime-form-card">
+            <h2 style="text-align: center;">Log Screen Time</h2>
+
+            <form id="screentime-form" class="screentime-form">
+              <div class="form-row">
+                <label for="screentime-child-select">Select child</label>
+                <select id="screentime-child-select" class="screentime-input" required>
+                  <option value="">— Choose a child —</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="screentime-category">Category</label>
+                <select id="screentime-category" class="screentime-input" required>
+                  <option value="">— Select —</option>
+                  <option value="Gaming">Gaming</option>
+                  <option value="Social Media">Social Media</option>
+                  <option value="Schoolwork">Schoolwork</option>
+                  <option value="TV">TV</option>
+                  <option value="Video Streaming">Video Streaming</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="screentime-date">Date</label>
+                <input type="date" id="screentime-date" class="screentime-input" required>
+              </div>
+
+              <div class="form-row">
+                <label for="screentime-time">Time</label>
+                <input type="time" id="screentime-time" class="screentime-input" required>
+              </div>
+
+              <div class="form-row-group">
+                <div class="form-row">
+                  <label for="screentime-duration-value">Duration</label>
+                  <input type="number" id="screentime-duration-value" class="screentime-input" min="1" max="1440" placeholder="e.g. 30" required>
+                </div>
+                <div class="form-row">
+                  <label for="screentime-duration-unit">Unit</label>
+                  <select id="screentime-duration-unit" class="screentime-input">
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row form-row-optional">
+                <label for="screentime-notes">Notes (optional)</label>
+                <textarea id="screentime-notes" class="screentime-input screentime-textarea" maxlength="200" placeholder="e.g. YouTube videos, online lessons, etc."></textarea>
+              </div>
+
+              <button type="submit" class="screentime-btn">Add Entry</button>
+            </form>
+            <p id="screentime-form-msg" class="screentime-msg" aria-live="polite"></p>
           </div>
 
           <!-- Filter section -->
@@ -122,53 +178,6 @@
               <canvas id="filtered-chart" aria-label="Filtered screen time data"></canvas>
             </div>
             <p id="filtered-chart-empty-msg" class="screentime-empty-msg" style="display: none;">No data for the selected filter. Try adjusting your filters.</p>
-          </div>
-
-          <!-- Log screen time form -->
-          <div class="screentime-form-card">
-            <h2 style="text-align: center;">Log Screen Time</h2>
-
-            <form id="screentime-form" class="screentime-form">
-              <div class="form-row">
-                <label for="screentime-category">Category</label>
-                <select id="screentime-category" class="screentime-input" required>
-                  <option value="">— Select —</option>
-                  <option value="Gaming">Gaming</option>
-                  <option value="Social Media">Social Media</option>
-                  <option value="Schoolwork">Schoolwork</option>
-                  <option value="TV">TV</option>
-                  <option value="Video Streaming">Video Streaming</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <label for="screentime-date">Date</label>
-                <input type="date" id="screentime-date" class="screentime-input" required>
-              </div>
-
-              <div class="form-row-group">
-                <div class="form-row">
-                  <label for="screentime-duration-value">Duration</label>
-                  <input type="number" id="screentime-duration-value" class="screentime-input" min="1" max="1440" placeholder="e.g. 30" required>
-                </div>
-                <div class="form-row">
-                  <label for="screentime-duration-unit">Unit</label>
-                  <select id="screentime-duration-unit" class="screentime-input">
-                    <option value="minutes">Minutes</option>
-                    <option value="hours">Hours</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row form-row-optional">
-                <label for="screentime-notes">Notes (optional)</label>
-                <textarea id="screentime-notes" class="screentime-input screentime-textarea" maxlength="200" placeholder="e.g. YouTube videos, online lessons, etc."></textarea>
-              </div>
-
-              <button type="submit" class="screentime-btn">Add Entry</button>
-            </form>
-            <p id="screentime-form-msg" class="screentime-msg" aria-live="polite"></p>
           </div>
 
           <!-- Screen time entry list -->
